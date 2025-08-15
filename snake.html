@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Complex Snake — Polished & Tunable</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --panel-w: 320px;
+    --bg-ui: rgba(18,20,28,0.7);
+    --accent: #6fe7ff;
+    --muted: #9aa6b2;
+  }
+  html,body{height:100%;margin:0;background:#05060a;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#e6eef6;overflow:hidden;}
+  #wrap{display:flex;height:100vh;gap:12px;padding:8px;box-sizing:border-box;max-width:1280px;max-height:720px;margin:0 auto;}
+  canvas{flex:1;border-radius:8px;box-shadow:0 12px 40px rgba(2,6,12,0.7);display:block;background:#011021;max-width:940px;max-height:704px;}
+  #panel{
+    width:var(--panel-w);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:8px;padding:12px;backdrop-filter: blur(6px);
+    box-shadow:0 6px 20px rgba(2,6,12,0.6);overflow-y:auto;max-height:704px;
+  }
+  h1{margin:0;font-size:16px;color:var(--accent);line-height:1.2}
+  .section{margin-top:10px}
+  label{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+  .row{display:flex;gap:6px}
+  input[type=range]{width:100%;height:18px}
+  .muted{color:var(--muted);font-size:11px}
+  button{padding:6px 8px;border-radius:6px;border:0;background:var(--accent);color:#012;cursor:pointer;font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 6px;border-radius:999px;background:rgba(255,255,255,0.02);font-size:11px}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .small{font-size:10px;color:var(--muted)}
+  .panel-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  footer{margin-top:8px;color:var(--muted);font-size:10px;line-height:1.3}
+  /* 720p optimizations */
+  @media (max-width:1280px) and (max-height:720px) { 
+    #wrap{gap:8px;padding:6px} 
+    #panel{width:280px;padding:10px;font-size:11px} 
+    canvas{border-radius:6px}
+    h1{font-size:14px}
+    .section{margin-top:8px}
+    label{margin:4px 0;font-size:11px}
+  }
+  @media (max-width:940px){ 
+    #wrap{flex-direction:column;max-height:none} 
+    #panel{width:auto;max-height:200px} 
+    canvas{height:400px;max-height:400px;max-width:100%} 
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+  <div id="panel">
+    <h1>Complex Snake — Tunable Visuals</h1>
+      <div class="small muted">Autonomous duel: press Start to begin. Pause/Reset anytime.</div>
+
+    <div class="section">
+      <div class="panel-row"><strong>Gameplay</strong><span class="small muted">Grid & speed</span></div>
+      <label>Grid density <input id="gridDensity" type="range" min="12" max="72" value="48"></label>
+      <label>Base speed <input id="baseSpeed" type="range" min="4" max="18" value="8"></label>
+      <label><input id="wrapWalls" type="checkbox" checked> Wrap walls</label>
+      <div class="row">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="panel-row"><strong>Visual FX</strong><span class="small muted">Tune intensity</span></div>
+      <label><input id="trailOn" type="checkbox" checked> Trail glow</label>
+      <label><input id="bgPulse" type="checkbox" checked> Background pulse</label>
+      <label><input id="particlesOn" type="checkbox" checked> Particles</label>
+      <label><input id="postOn" type="checkbox" checked> Post-FX</label>
+      <label>FX intensity <input id="fxIntensity" type="range" min="0" max="100" value="48"></label>
+    </div>
+
+    <div class="section">
+      <div class="panel-row"><strong>Powers & Foods</strong><span class="small muted">Enable types</span></div>
+      <label><input id="powerSpeed" type="checkbox" checked> Speed boost <span class="pill" style="margin-left:auto"><span class="dot" style="background:#ffcc66"></span>gold</span></label>
+      <label><input id="powerReverse" type="checkbox" checked> Reverse controls <span class="pill" style="margin-left:auto"><span class="dot" style="background:#c6a2ff"></span>purple</span></label>
+      <label><input id="powerDouble" type="checkbox" checked> Double vision <span class="pill" style="margin-left:auto"><span class="dot" style="background:#7fe7ff"></span>cyan</span></label>
+      <label><input id="powerSlow" type="checkbox" checked> Time slow <span class="pill" style="margin-left:auto"><span class="dot" style="background:#8bb0ff"></span>blue</span></label>
+    </div>
+
+    <div class="section">
+      <div class="panel-row"><strong>World</strong><span class="small muted">Obstacles & zones</span></div>
+      <label><input id="obstaclesOn" type="checkbox" checked> Obstacles</label>
+      <label>Obstacle density <input id="obsDensity" type="range" min="0" max="8" step="0.1" value="1.2"></label>
+      <label><input id="carve" type="checkbox" checked> Carve corridors</label>
+      <label><input id="zonesOn" type="checkbox" checked> Terrain zones</label>
+      <label>Zone count <input id="zoneCount" type="range" min="0" max="6" value="3"></label>
+    </div>
+
+    <div class="section">
+      <div class="panel-row"><strong>Live stats</strong><span class="small muted" id="liveStats">A 0 · B 0 · FX On</span></div>
+    </div>
+
+      <div class="section">
+        <div class="panel-row" style="margin-bottom:6px"><strong>Scoreboard</strong><span class="small muted">Cumulative</span></div>
+        <div class="row" style="gap:10px">
+          <div class="pill" style="flex:1;justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="dot" style="background:hsl(165,80%,55%)"></span>
+              <strong>A</strong>
+            </span>
+            <span id="scoreA">0</span>
+          </div>
+          <div class="pill" style="flex:1;justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="dot" style="background:hsl(12,80%,55%)"></span>
+              <strong>B</strong>
+            </span>
+            <span id="scoreB">0</span>
+          </div>
+        </div>
+      </div>
+
+    <footer>Tip: Toggle Post-FX + high FX intensity for a more cinematic look (performance depends on your device).</footer>
+  </div>
+</div>
+
+<script>
+/*  Complex Snake - polished visual tunings
+    - Single file. Modular components: Grid, Background, Snake, Food, Particles, Obstacles, Zones, PostFX
+    - Settings panel toggles live.
+    - Comments explain key parts.
+*/
+
+/* -------------------------
+   Canvas & DPR / Resize
+   ------------------------- */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d', { alpha: true });
+let DPR = Math.max(1, window.devicePixelRatio || 1);
+
+function resize(){
+  // fit to parent container
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.floor(rect.width * DPR);
+  canvas.height = Math.floor(rect.height * DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', () => requestAnimationFrame(() => { resize(); computeLayout(); }));
+
+resize();
+
+/* -------------------------
+   Settings (connected to UI)
+   ------------------------- */
+const UI = {
+  gridDensity: document.getElementById('gridDensity'),
+  baseSpeed: document.getElementById('baseSpeed'),
+  wrapWalls: document.getElementById('wrapWalls'),
+  startBtn: document.getElementById('startBtn'),
+  pauseBtn: document.getElementById('pauseBtn'),
+  resetBtn: document.getElementById('resetBtn'),
+  trailOn: document.getElementById('trailOn'),
+  bgPulse: document.getElementById('bgPulse'),
+  particlesOn: document.getElementById('particlesOn'),
+  postOn: document.getElementById('postOn'),
+  fxIntensity: document.getElementById('fxIntensity'),
+  powerSpeed: document.getElementById('powerSpeed'),
+  powerReverse: document.getElementById('powerReverse'),
+  powerDouble: document.getElementById('powerDouble'),
+  powerSlow: document.getElementById('powerSlow'),
+  obstaclesOn: document.getElementById('obstaclesOn'),
+  obsDensity: document.getElementById('obsDensity'),
+  carve: document.getElementById('carve'),
+  zonesOn: document.getElementById('zonesOn'),
+  zoneCount: document.getElementById('zoneCount'),
+  liveStats: document.getElementById('liveStats'),
+  scoreA: document.getElementById('scoreA'),
+  scoreB: document.getElementById('scoreB')
+};
+
+let settings = {
+  gridDensity: Number(UI.gridDensity.value),
+  baseSpeed: Number(UI.baseSpeed.value),
+  wrapWalls: UI.wrapWalls.checked,
+  trail: UI.trailOn.checked,
+  bgPulse: UI.bgPulse.checked,
+  particles: UI.particlesOn.checked,
+  postOn: UI.postOn.checked,
+  fxIntensity: Number(UI.fxIntensity.value),
+  powers: {
+    speed: UI.powerSpeed.checked,
+    reverse: UI.powerReverse.checked,
+    doubleVision: UI.powerDouble.checked,
+    slowdown: UI.powerSlow.checked
+  },
+  obstacles: {
+    on: UI.obstaclesOn.checked,
+    density: Number(UI.obsDensity.value),
+    carve: UI.carve.checked
+  },
+  zonesOn: UI.zonesOn.checked,
+  zoneCount: Number(UI.zoneCount.value)
+};
+
+// wire UI events to live settings
+for (const key in UI){
+  const el = UI[key];
+  if (!el) continue;
+  el.addEventListener('input', () => {
+    settings.gridDensity = Number(UI.gridDensity.value);
+    settings.baseSpeed = Number(UI.baseSpeed.value);
+    settings.wrapWalls = UI.wrapWalls.checked;
+    settings.trail = UI.trailOn.checked;
+    settings.bgPulse = UI.bgPulse.checked;
+    settings.particles = UI.particlesOn.checked;
+    settings.postOn = UI.postOn.checked;
+    settings.fxIntensity = Number(UI.fxIntensity.value);
+    settings.powers.speed = UI.powerSpeed.checked;
+    settings.powers.reverse = UI.powerReverse.checked;
+    settings.powers.doubleVision = UI.powerDouble.checked;
+    settings.powers.slowdown = UI.powerSlow.checked;
+    settings.obstacles.on = UI.obstaclesOn.checked;
+    settings.obstacles.density = Number(UI.obsDensity.value);
+    settings.obstacles.carve = UI.carve.checked;
+    settings.zonesOn = UI.zonesOn.checked;
+    settings.zoneCount = Number(UI.zoneCount.value);
+    // regenerate world where appropriate
+    if (['obsDensity','obstaclesOn','zoneCount','zonesOn','carve','gridDensity'].includes(el.id)) {
+      generateWorld();
+    }
+    updateLiveStats();
+  });
+}
+
+/* -------------------------
+   Grid & layout
+   ------------------------- */
+const GRID = { cols: 48, rows: 30, tile: 16, offsetX: 0, offsetY: 0 };
+function computeLayout(){
+  // adapt grid size to canvas and density slider
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const density = settings.gridDensity;
+  // try to make tile size fit the desired cols/rows (but adapt)
+  GRID.cols = Math.max(10, Math.floor(W / Math.max(8, density/1.2)));
+  GRID.rows = Math.max(8, Math.floor(H / Math.max(8, density/2)));
+  GRID.tile = Math.max(8, Math.floor(Math.min(W / GRID.cols, H / GRID.rows)));
+  GRID.offsetX = Math.round((W - GRID.cols * GRID.tile) / 2);
+  GRID.offsetY = Math.round((H - GRID.rows * GRID.tile) / 2);
+}
+computeLayout();
+
+/* -------------------------
+   Background with pulse & vignette
+   ------------------------- */
+class Background {
+  constructor(){
+    this.t = 0;
+  }
+  update(dt){
+    this.t += dt * 0.0006;
+  }
+  draw(ctx, w, h){
+    // dynamic gradient
+    const hueA = 210 + Math.sin(this.t) * 10;
+    const hueB = 260 + Math.cos(this.t*1.4) * 10;
+    const g = ctx.createLinearGradient(0,0,w,h);
+    g.addColorStop(0, `hsl(${hueA}, 45%, 8%)`);
+    g.addColorStop(0.6, `hsl(${hueB}, 30%, 6%)`);
+    g.addColorStop(1, `hsl(${hueA+20}, 35%, 4%)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+
+    // subtle radial glow
+    if (settings.bgPulse){
+      ctx.save();
+      ctx.globalAlpha = 0.06 + Math.abs(Math.sin(this.t*0.9))*0.03;
+      const rg = ctx.createRadialGradient(w*0.25, h*0.35, 80, w*0.25, h*0.35, Math.max(w,h)*0.9);
+      rg.addColorStop(0, 'rgba(120,200,255,0.06)');
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(0,0,w,h);
+      ctx.restore();
+    }
+
+    // vignette
+    ctx.save();
+    const vig = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.4, w/2,h/2, Math.max(w,h));
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0,0,w,h);
+    ctx.restore();
+  }
+}
+const background = new Background();
+
+/* -------------------------
+   Grid overlay
+   ------------------------- */
+function drawGrid(ctx){
+  const tile = GRID.tile;
+  const cols = GRID.cols, rows = GRID.rows;
+  ctx.save();
+  ctx.translate(GRID.offsetX, GRID.offsetY);
+  ctx.globalAlpha = 0.12 * (settings.fxIntensity / 60);
+  ctx.strokeStyle = 'rgba(120,160,180,0.14)';
+  ctx.lineWidth = 1;
+  // draw vertical lines
+  for (let i=0;i<=cols;i++){
+    const x = i*tile + 0.5;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, rows*tile); ctx.stroke();
+  }
+  // draw horizontal
+  for (let j=0;j<=rows;j++){
+    const y = j*tile + 0.5;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cols*tile, y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* -------------------------
+   Offscreen trail canvas for bloom-like glow
+   ------------------------- */
+const trailCanvas = document.createElement('canvas');
+const trailCtx = trailCanvas.getContext('2d', { alpha: true });
+
+function ensureTrailSize(){
+  trailCanvas.width = canvas.width;
+  trailCanvas.height = canvas.height;
+  trailCtx.setTransform(DPR,0,0,DPR,0,0);
+}
+ensureTrailSize();
+
+/* -------------------------
+   Snake
+   ------------------------- */
+class Snake {
+  constructor(id, colorHue){
+    this.id = id;
+    this.colorHue = colorHue;
+    // initialize inert; actual spawn happens at round start
+    this.segments = [];
+    this.dir = {x:1,y:0};
+    this.nextDir = {x:1,y:0};
+    this.grow = 0;
+    this.alive = false;
+    this.trailPoints = [];
+    this.powerTimers = {};
+    this.speedBoost = 1;
+    this.reverse = false;
+    this.double = false;
+    this.slow = false;
+    this.aliveMsAccumulator = 0;
+  }
+  reset(spawnX, spawnY, dir={x:1,y:0}){
+    this.segments = [];
+    const startLen = 6;
+    for (let i=0;i<startLen;i++) this.segments.push({x:spawnX - i*dir.x, y:spawnY - i*dir.y});
+    this.dir = {x:dir.x, y:dir.y};
+    this.nextDir = {x:dir.x, y:dir.y};
+    this.grow = 0;
+    this.alive = true;
+    this.trailPoints = [];
+    this.powerTimers = {};
+    this.speedBoost = 1;
+    this.reverse = false;
+    this.double = false;
+    this.slow = false;
+    this.aliveMsAccumulator = 0; // for +1/sec scoring
+  }
+
+  setDir(x,y){
+    // avoid immediate reversal
+    if (x === -this.dir.x && y === -this.dir.y) return;
+    this.nextDir = {x,y};
+  }
+
+  tick(){
+    // commit next direction
+    if (!(this.nextDir.x === -this.dir.x && this.nextDir.y === -this.dir.y)) this.dir = this.nextDir;
+    const head = {x: this.segments[0].x + this.dir.x, y: this.segments[0].y + this.dir.y};
+    this.segments.unshift(head);
+    if (this.grow > 0){ this.grow--; } else { this.segments.pop(); }
+    // add pixel space trail point for bloom canvas
+    const pos = {x: head.x + 0.5, y: head.y + 0.5, life: 1.0};
+    this.trailPoints.unshift(pos);
+    while (this.trailPoints.length > Math.max(8, Math.floor(settings.fxIntensity/4))) this.trailPoints.pop();
+  }
+
+  enablePower(name, duration=4000){
+    this.powerTimers[name] = duration;
+    // immediate effects
+    if (name === 'speed') this.speedBoost = 1.8;
+    if (name === 'reverse') this.reverse = true;
+    if (name === 'double') this.double = true;
+    if (name === 'slow') this.slow = true;
+  }
+
+  updatePowers(dt){
+    for (const k of Object.keys(this.powerTimers)){
+      this.powerTimers[k] -= dt;
+      if (this.powerTimers[k] <= 0){
+        delete this.powerTimers[k];
+        if (k === 'speed') this.speedBoost = 1;
+        if (k === 'reverse') this.reverse = false;
+        if (k === 'double') this.double = false;
+        if (k === 'slow') this.slow = false;
+      }
+    }
+  }
+
+  collidesWithSelf(){
+    const h = this.segments[0];
+    for (let i=1;i<this.segments.length;i++){
+      if (this.segments[i].x === h.x && this.segments[i].y === h.y) return true;
+    }
+    return false;
+  }
+
+  collides(x,y){
+    return this.segments.some(s => s.x === x && s.y === y);
+  }
+
+  drawMain(ctx){
+    // draw body boxes with small bevel
+    ctx.save();
+    ctx.translate(GRID.offsetX, GRID.offsetY);
+    const tile = GRID.tile;
+    for (let i=this.segments.length-1;i>=0;i--){
+      const s = this.segments[i];
+      const px = s.x * tile; const py = s.y * tile;
+      const hue = this.colorHue + (i===0?8: - i*0.6);
+      // base rect
+      ctx.fillStyle = `hsl(${hue}, 80%, ${i===0?60:28}%)`;
+      roundRectPath(ctx, px+1, py+1, tile-2, tile-2, tile*0.22);
+      ctx.fill();
+      // inner highlight
+      ctx.fillStyle = `rgba(255,255,255,${i===0?0.18:0.06})`;
+      roundRectPath(ctx, px+tile*0.12, py+tile*0.12, tile - tile*0.24, tile - tile*0.24, tile*0.18);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  drawTrailToOffscreen(ctxOff){
+    if (!settings.trail) return;
+    // paint additive glows onto trail canvas
+    ctxOff.save();
+    ctxOff.globalCompositeOperation = 'lighter';
+    for (let i=0;i<this.trailPoints.length;i++){
+      const p = this.trailPoints[i];
+      const alpha = Math.max(0, p.life) * (1 - i / (this.trailPoints.length + 1));
+      const px = GRID.offsetX + p.x * GRID.tile;
+      const py = GRID.offsetY + p.y * GRID.tile;
+      const r = GRID.tile * (0.7 + (1 - i/this.trailPoints.length) * 1.6) * (settings.fxIntensity/60);
+      const g = ctxOff.createRadialGradient(px,py,0,px,py,r);
+      g.addColorStop(0, `hsla(${this.colorHue},80%,60%,${(0.8 * alpha).toFixed(3)})`);
+      g.addColorStop(0.6, `hsla(${this.colorHue},70%,50%,${(0.28 * alpha).toFixed(3)})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctxOff.fillStyle = g;
+      ctxOff.beginPath(); ctxOff.arc(px,py,r,0,Math.PI*2); ctxOff.fill();
+      // age it slightly
+      p.life *= 0.96;
+    }
+    ctxOff.restore();
+  }
+}
+function roundRectPath(ctx, x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* -------------------------
+   Food types & animations
+   ------------------------- */
+const FOOD_TYPES = [
+  {name:'speed', color:'#ffcc66', power:'speed', anim:'pulse'},
+  {name:'reverse', color:'#c6a2ff', power:'reverse', anim:'spin'},
+  {name:'double', color:'#7fe7ff', power:'double', anim:'float'},
+  {name:'slow', color:'#8bb0ff', power:'slow', anim:'ripple'}
+];
+
+class Food {
+  constructor(x,y,type){
+    this.x=x; this.y=y; this.type=type; this.t = Math.random()*6000;
+  }
+  update(dt){ this.t += dt; }
+  draw(ctx){
+    ctx.save();
+    const cx = GRID.offsetX + (this.x + 0.5) * GRID.tile;
+    const cy = GRID.offsetY + (this.y + 0.5) * GRID.tile;
+    const tile = GRID.tile;
+    // per-type stylings
+    if (this.type.anim === 'pulse'){
+      const r = tile*0.28 + Math.sin(this.t*0.006)*4;
+      const g = ctx.createRadialGradient(cx,cy,0,cx,cy,r*1.6);
+      g.addColorStop(0, this.type.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.arc(cx,cy,r*1.2,0,Math.PI*2); ctx.fill();
+    } else if (this.type.anim === 'spin'){
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(this.t*0.002);
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = this.type.color;
+      ctx.beginPath();
+      ctx.moveTo(-tile*0.2, -tile*0.08);
+      ctx.lineTo(tile*0.26, 0);
+      ctx.lineTo(-tile*0.2, tile*0.08);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else if (this.type.anim === 'float'){
+      const bob = Math.sin(this.t*0.004)*4;
+      ctx.fillStyle = this.type.color; ctx.globalAlpha = 0.92;
+      ctx.beginPath(); ctx.ellipse(cx, cy+bob, tile*0.26, tile*0.22, 0, 0, Math.PI*2); ctx.fill();
+    } else if (this.type.anim === 'ripple'){
+      const r = tile*0.22 + (Math.sin(this.t*0.005)+1)*6;
+      const ggrad = ctx.createRadialGradient(cx,cy,0,cx,cy,r*1.6);
+      ggrad.addColorStop(0, this.type.color); ggrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = ggrad; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    }
+    // center core
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.95;
+    ctx.beginPath(); ctx.arc(cx,cy,tile*0.09,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = this.type.color; ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.arc(cx,cy,tile*0.06,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* -------------------------
+   Particles
+   ------------------------- */
+class Particle {
+  constructor(x,y,color){
+    this.pos = {x,y};
+    const ang = Math.random()*Math.PI*2;
+    const speed = 30 + Math.random()*200;
+    this.vel = {x: Math.cos(ang)*speed, y: Math.sin(ang)*speed};
+    this.life = 400 + Math.random()*900;
+    this.size = 1 + Math.random()*3;
+    this.color = color;
+    this.age = 0;
+  }
+  update(dt){
+    this.age += dt;
+    this.pos.x += this.vel.x*(dt/1000);
+    this.pos.y += this.vel.y*(dt/1000);
+    this.vel.x *= 0.995; this.vel.y *= 0.995;
+  }
+  get alive(){ return this.age < this.life; }
+  draw(ctx){
+    const a = 1 - this.age/this.life;
+    const r = this.size * (1 + (1-a)*2) * (settings.fxIntensity/60);
+    const g = ctx.createRadialGradient(this.pos.x, this.pos.y, 0, this.pos.x, this.pos.y, r);
+    g.addColorStop(0, hexToRGBA(this.color, a));
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(this.pos.x, this.pos.y, r, 0, Math.PI*2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+}
+
+class ParticleSystem {
+  constructor(){ this.p = []; }
+  spawn(x,y,color,count=24){
+    if (!settings.particles) return;
+    for (let i=0;i<count;i++) this.p.push(new Particle(x + (Math.random()-0.5)*6, y + (Math.random()-0.5)*6, color));
+  }
+  update(dt){
+    for (let i=this.p.length-1;i>=0;i--){
+      this.p[i].update(dt);
+      if (!this.p[i].alive) this.p.splice(i,1);
+    }
+  }
+  draw(ctx){ for (const p of this.p) p.draw(ctx); }
+}
+const particles = new ParticleSystem();
+
+/* -------------------------
+   Obstacles & Zones generation
+   ------------------------- */
+let obstacles = []; // array of {x,y,w,h}
+let zones = [];     // array of {x,y,r,color,alpha}
+
+function generateWorld(){
+  obstacles = [];
+  zones = [];
+  computeLayout();
+
+  // obstacles: scatter random rectangular blocks with some carve option
+  if (settings.obstacles.on){
+    const area = GRID.cols * GRID.rows;
+    const baseCount = Math.max(2, Math.floor(area * (settings.obstacles.density / 100)));
+    const count = Math.max(4, Math.floor(baseCount * 6)); // scale factor
+    for (let i=0;i<count;i++){
+      const w = 1 + Math.floor(Math.random()*3);
+      const h = 1 + Math.floor(Math.random()*3);
+      const x = Math.floor(Math.random()* (GRID.cols - w));
+      const y = Math.floor(Math.random()* (GRID.rows - h));
+      obstacles.push({x,y,w,h});
+    }
+    // optional carve: add a corridor by removing obstacles near a random walk
+    if (settings.obstacles.carve){
+      let cx = Math.floor(GRID.cols*0.2), cy = Math.floor(GRID.rows/2);
+      for (let j=0;j<Math.max(20, GRID.cols*2); j++){
+        const dir = Math.random();
+        if (dir < 0.25) cx++;
+        else if (dir < 0.5) cx--;
+        else if (dir < 0.75) cy++;
+        else cy--;
+        cx = (cx + GRID.cols) % GRID.cols; cy = (cy + GRID.rows) % GRID.rows;
+        // remove obstacles that overlap the corridor
+        obstacles = obstacles.filter(o => !(o.x <= cx && cx < o.x + o.w && o.y <= cy && cy < o.y + o.h));
+      }
+    }
+  }
+
+  // zones: soft circular regions
+  if (settings.zonesOn){
+    const zCount = Math.max(0, settings.zoneCount);
+    const palette = ['#2fd1ff','#ffcc66','#c6a2ff','#8bb0ff','#8affc1'];
+    for (let i=0;i<zCount;i++){
+      const r = 3 + Math.floor(Math.random()*6);
+      const x = 1 + Math.floor(Math.random()*(GRID.cols - 2*r));
+      const y = 1 + Math.floor(Math.random()*(GRID.rows - 2*r));
+      const color = palette[i % palette.length];
+      zones.push({x:x + r, y:y + r, r, color, alpha: 0.15 + Math.random()*0.18});
+    }
+  }
+
+  // ensure snakes are not inside obstacles after regen
+  if (typeof snakes !== 'undefined'){
+    for (const s of snakes){
+      if (!s || !s.segments || s.segments.length===0) continue;
+      const h = s.segments[0];
+      if (isBlockedCell(h.x, h.y)){
+        // find free spot
+        outer: for (let yy=1; yy<GRID.rows-1; yy++){
+          for (let xx=1; xx<GRID.cols-1; xx++){
+            if (!isBlockedCell(xx,yy) && !s.collides(xx,yy)){
+              s.segments[0] = {x:xx,y:yy};
+              break outer;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function isBlockedCell(x,y){
+  for (const o of obstacles){
+    if (x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h) return true;
+  }
+  return false;
+}
+
+/* -------------------------
+   Foods: spawn avoiding obstacles/zones/snake
+   ------------------------- */
+let foods = [];
+function spawnFood(){
+  let attempts = 0;
+  while (attempts++ < 400){
+    const x = Math.floor(Math.random()*GRID.cols);
+    const y = Math.floor(Math.random()*GRID.rows);
+    if (isBlockedCell(x,y)) continue;
+    // avoid both snakes
+    if (snakes && snakes.some(s => s.collides(x,y))) continue;
+    if (foods.some(f => f.x===x && f.y===y)) continue;
+    const t = FOOD_TYPES[Math.floor(Math.random()*FOOD_TYPES.length)];
+    // respect settings for which powers are allowed
+    if (t.power === 'speed' && !settings.powers.speed) continue;
+    if (t.power === 'reverse' && !settings.powers.reverse) continue;
+    if (t.power === 'double' && !settings.powers.doubleVision) continue;
+    if (t.power === 'slow' && !settings.powers.slowdown) continue;
+    foods.push(new Food(x,y,t));
+    return;
+  }
+}
+
+/* -------------------------
+   Utility helpers
+   ------------------------- */
+function hexToRGBA(hex, a=1){
+  const c = hex.replace('#','');
+  const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* -------------------------
+   Game state & snakes instantiation (two autonomous snakes)
+   ------------------------- */
+const snakeA = new Snake('A', 165);
+const snakeB = new Snake('B', 12);
+const snakes = [snakeA, snakeB];
+
+let running = true;
+let paused = false;
+const cumulativeScores = { A: 0, B: 0 };
+let saveDebounce = 0;
+let serverCheckpointURL = '/api/checkpoint';
+
+function loadCheckpoint(){
+  // Try server first (text/plain A=..&B=.. ; also supports JSON)
+  fetch(serverCheckpointURL, { method: 'GET' }).then(r=> r.ok ? r.text() : null).then(txt => {
+    if (typeof txt === 'string' && txt.length){
+      const parsed = parseCheckpointPayload(txt);
+      if (parsed){
+        if (Number.isFinite(parsed.A)) cumulativeScores.A = parsed.A|0;
+        if (Number.isFinite(parsed.B)) cumulativeScores.B = parsed.B|0;
+        updateLiveStats(true);
+        try{ localStorage.setItem('snake_duel_checkpoint', JSON.stringify(cumulativeScores)); }catch(e){}
+        return;
+      }
+    }
+    // fallback to local
+    loadCheckpointLocal();
+  }).catch(()=>{ loadCheckpointLocal(); });
+}
+
+function parseCheckpointPayload(txt){
+  try{
+    if (txt.trim().startsWith('{')){
+      const obj = JSON.parse(txt);
+      return { A: Number(obj.A)||0, B: Number(obj.B)||0 };
+    }
+  }catch(e){}
+  const out = {A:0,B:0};
+  try{
+    const parts = txt.trim().split('&');
+    for (const p of parts){
+      const kv = p.split('=');
+      const k = kv[0];
+      const v = kv[1] || '0';
+      if (k === 'A') out.A = Number(decodeURIComponent(v))||0;
+      if (k === 'B') out.B = Number(decodeURIComponent(v))||0;
+    }
+    return out;
+  }catch(e){ return null; }
+}
+
+function loadCheckpointLocal(){
+  try{
+    const raw = localStorage.getItem('snake_duel_checkpoint');
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object'){
+      if (Number.isFinite(parsed.A)) cumulativeScores.A = parsed.A|0;
+      if (Number.isFinite(parsed.B)) cumulativeScores.B = parsed.B|0;
+    }
+  }catch(e){ /* ignore */ }
+}
+
+function saveCheckpoint(immediate=false){
+  if (immediate){
+    // write local
+    try{ localStorage.setItem('snake_duel_checkpoint', JSON.stringify(cumulativeScores)); }catch(e){}
+    // write server as urlencoded text
+    try{ const body = 'A=' + encodeURIComponent(cumulativeScores.A) + '&B=' + encodeURIComponent(cumulativeScores.B); navigator.sendBeacon && navigator.sendBeacon(serverCheckpointURL, new Blob([body], {type:'text/plain'})); }catch(e){}
+    return;
+  }
+  // debounce frequent updates
+  const now = performance.now();
+  if (now - saveDebounce < 800) return;
+  saveDebounce = now;
+  try{ localStorage.setItem('snake_duel_checkpoint', JSON.stringify(cumulativeScores)); }catch(e){}
+  // async fire-and-forget; ignore errors
+  try{
+    const body = 'A=' + encodeURIComponent(cumulativeScores.A) + '&B=' + encodeURIComponent(cumulativeScores.B);
+    fetch(serverCheckpointURL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  }catch(e){}
+}
+let roundResetScheduled = false;
+
+function placeSnakesAtRoundStart(){
+  // compute spawn positions (left and right center)
+  const ay = Math.floor(GRID.rows/2);
+  const by = Math.floor(GRID.rows/2);
+  const ax = Math.max(3, Math.floor(GRID.cols*0.25));
+  const bx = Math.min(GRID.cols-4, Math.floor(GRID.cols*0.75));
+  // ensure free cells (nudge if blocked)
+  const safeSpot = (sx,sy) => {
+    if (!isBlockedCell(sx,sy)) return {x:sx,y:sy};
+    for (let r=1;r<Math.max(GRID.cols,GRID.rows);r++){
+      for (let dx=-r; dx<=r; dx++){
+        for (let dy=-r; dy<=r; dy++){
+          const nx = Math.min(GRID.cols-2, Math.max(1, sx+dx));
+          const ny = Math.min(GRID.rows-2, Math.max(1, sy+dy));
+          if (!isBlockedCell(nx,ny)) return {x:nx,y:ny};
+        }
+      }
+    }
+    return {x:sx,y:sy};
+  };
+  const aSpot = safeSpot(ax, ay);
+  const bSpot = safeSpot(bx, by);
+  snakeA.reset(aSpot.x, aSpot.y, {x:1,y:0});
+  snakeB.reset(bSpot.x, bSpot.y, {x:-1,y:0});
+}
+
+function resetRound(){
+  foods = [];
+  generateWorld();
+  placeSnakesAtRoundStart();
+  for (let i=0;i<4;i++) spawnFood();
+  running = true; UI.startBtn.disabled = true;
+  updateLiveStats(true);
+}
+resetRound();
+
+/* -------------------------
+   Controls (no keyboard steering; fully autonomous)
+   ------------------------- */
+window.addEventListener('keydown', (e)=>{
+  if (e.code === 'Space'){ e.preventDefault(); paused = !paused; UI.pauseBtn.textContent = paused ? 'Resume' : 'Pause'; }
+});
+
+/* buttons */
+UI.startBtn.addEventListener('click', ()=>{ running = true; UI.startBtn.disabled = true; });
+UI.pauseBtn.addEventListener('click', ()=>{ paused = !paused; UI.pauseBtn.textContent = paused ? 'Resume' : 'Pause'; });
+UI.resetBtn.addEventListener('click', ()=>{ paused = false; UI.pauseBtn.textContent = 'Pause'; resetRound(); updateLiveStats(true); });
+
+/* -------------------------
+   Collision, eating & interactions
+   ------------------------- */
+function handleEatingForSnake(snake){
+  const head = snake.segments[0];
+  for (let i=foods.length-1;i>=0;i--){
+    const f = foods[i];
+    if (f.x === head.x && f.y === head.y){
+      foods.splice(i,1);
+      cumulativeScores[snake.id] += 10;
+      saveCheckpoint();
+      snake.grow += 1 + Math.floor(Math.random()*2);
+      const cx = GRID.offsetX + (f.x + 0.5)*GRID.tile;
+      const cy = GRID.offsetY + (f.y + 0.5)*GRID.tile;
+      particles.spawn(cx, cy, f.type.color, Math.floor(12 + settings.fxIntensity/4));
+      const power = f.type.power;
+      if (power === 'speed' && settings.powers.speed){
+        snake.enablePower('speed', 5000);
+      } else if (power === 'reverse' && settings.powers.reverse){
+        snake.enablePower('reverse', 5000);
+      } else if (power === 'double' && settings.powers.doubleVision){
+        snake.enablePower('double', 5000);
+      } else if (power === 'slow' && settings.powers.slowdown){
+        snake.enablePower('slow', 5000);
+      }
+      spawnFood();
+      break;
+    }
+  }
+}
+
+/* collision with obstacles */
+function handleCollisionsMulti(){
+  // apply wrapping or walls, check obstacles/self
+  const dead = new Set();
+  for (const s of snakes){
+    if (!s.alive) continue;
+    const head = s.segments[0];
+    if (settings.wrapWalls){
+      if (head.x < 0) head.x = GRID.cols - 1;
+      if (head.x >= GRID.cols) head.x = 0;
+      if (head.y < 0) head.y = GRID.rows - 1;
+      if (head.y >= GRID.rows) head.y = 0;
+    } else {
+      if (head.x < 0 || head.x >= GRID.cols || head.y < 0 || head.y >= GRID.rows){
+        dead.add(s.id);
+        continue;
+      }
+    }
+    if (isBlockedCell(head.x, head.y)) dead.add(s.id);
+    if (s.collidesWithSelf()) dead.add(s.id);
+  }
+  // inter-snake collisions
+  const hA = snakeA.segments[0];
+  const hB = snakeB.segments[0];
+  // head-on
+  if (hA.x === hB.x && hA.y === hB.y){ dead.add('A'); dead.add('B'); }
+  // head into other's body
+  if (!dead.has('A') && snakeB.segments.slice(0).some((seg,idx)=> idx>0 && seg.x===hA.x && seg.y===hA.y)) dead.add('A');
+  if (!dead.has('B') && snakeA.segments.slice(0).some((seg,idx)=> idx>0 && seg.x===hB.x && seg.y===hB.y)) dead.add('B');
+
+  if (dead.size > 0 && !roundResetScheduled){
+    for (const id of dead){
+      const s = id==='A'?snakeA:snakeB;
+      if (s.alive){
+        const h = s.segments[0];
+        const px = GRID.offsetX + (h.x + 0.5) * GRID.tile;
+        const py = GRID.offsetY + (h.y + 0.5) * GRID.tile;
+        particles.spawn(px, py, s.id==='A'? '#7fe7ff' : '#ff9a7f', 100 + Math.floor(settings.fxIntensity/2));
+      }
+      s.alive = false;
+    }
+    // award +50 to survivor if exactly one survives
+    const aliveIds = snakes.filter(s=>s.alive).map(s=>s.id);
+    if (aliveIds.length === 1){
+      cumulativeScores[aliveIds[0]] += 50;
+    }
+    saveCheckpoint();
+    roundResetScheduled = true;
+    setTimeout(()=>{ resetRound(); updateLiveStats(true); roundResetScheduled = false; }, 1100);
+  }
+}
+
+/* -------------------------
+   Render world elements
+   ------------------------- */
+function drawObstacles(ctx){
+  ctx.save(); ctx.translate(GRID.offsetX, GRID.offsetY);
+  ctx.fillStyle = 'rgba(200,50,80,0.08)';
+  ctx.strokeStyle = 'rgba(200,70,90,0.12)';
+  ctx.lineWidth = 1;
+  for (const o of obstacles){
+    const x = o.x * GRID.tile, y = o.y * GRID.tile, w = o.w * GRID.tile, h = o.h * GRID.tile;
+    roundRectPath(ctx, x+1, y+1, w-2, h-2, GRID.tile*0.12);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawZones(ctx){
+  for (const z of zones){
+    const cx = GRID.offsetX + (z.x) * GRID.tile;
+    const cy = GRID.offsetY + (z.y) * GRID.tile;
+    const r = z.r * GRID.tile;
+    ctx.save();
+    // outer thin ring
+    ctx.globalAlpha = z.alpha * (settings.fxIntensity/70);
+    ctx.strokeStyle = hexToRGBA(z.color, 0.22);
+    ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(cx,cy,r+4,0,Math.PI*2); ctx.stroke();
+    // soft fill
+    const g = ctx.createRadialGradient(cx,cy,0,cx,cy,r*1.6);
+    g.addColorStop(0, hexToRGBA(z.color, 0.08));
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* -------------------------
+   Post FX (scanlines & subtle blur via compositing)
+   ------------------------- */
+function applyPostFX(ctx, w, h, now){
+  if (!settings.postOn) return;
+  // subtle scanlines
+  ctx.save();
+  const alpha = 0.02 + Math.max(0, (settings.fxIntensity - 20)/200);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#000';
+  for (let y=0;y<h;y+=3){
+    if ((y/3 + Math.floor(now*0.004)) % 7 === 0) ctx.fillRect(0,y,w,1);
+  }
+  ctx.restore();
+
+  // color grading vignette (overlay)
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = 0.03 + (settings.fxIntensity/600);
+  ctx.fillStyle = '#06202b';
+  ctx.fillRect(0,0,w,h);
+  ctx.restore();
+}
+
+/* -------------------------
+   Main loop / timing / ticks
+   ------------------------- */
+let lastTime = performance.now();
+let acc = 0;
+function loop(now){
+  const dt = now - lastTime;
+  lastTime = now;
+  acc += dt;
+
+  // updates
+  background.update(dt);
+  snakeA.updatePowers(dt);
+  snakeB.updatePowers(dt);
+  particles.update(dt);
+  for (const f of foods) f.update(dt);
+  tickAliveScoring(dt);
+
+  // tick frequency affected by speed power / base speed / slowdown power
+  let tickRate = settings.baseSpeed; // ticks per second
+  if (snakeA.powerTimers.speed || snakeB.powerTimers.speed) tickRate *= 1.6;
+  if (snakeA.powerTimers.slow || snakeB.powerTimers.slow) tickRate *= 0.45;
+  const tickInterval = 1000 / tickRate;
+
+  if (running && !paused){
+    // allow multiple ticks if dt large
+    while (acc >= tickInterval){
+      acc -= tickInterval;
+      // AI decide next moves before both move
+      computeAIMove(snakeA, snakeB);
+      computeAIMove(snakeB, snakeA);
+      // move both
+      if (snakeA.alive) snakeA.tick();
+      if (snakeB.alive) snakeB.tick();
+      // eating
+      if (snakeA.alive) handleEatingForSnake(snakeA);
+      if (snakeB.alive) handleEatingForSnake(snakeB);
+      // collisions
+      handleCollisionsMulti();
+    }
+  }
+
+  // Render pipeline
+  // 1) clear main canvas
+  resize(); ensureTrailSize(); computeLayout();
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
+
+  // 2) background
+  background.draw(ctx, W, H);
+
+  // 3) grid
+  drawGrid(ctx);
+
+  // 4) zones and obstacles (below snake)
+  drawZones(ctx);
+  drawObstacles(ctx);
+
+  // 5) foods
+  for (const f of foods) f.draw(ctx);
+
+  // 6) draw snakes trail on offscreen (additive), then blur and composite
+  // clear trail canvas with slight fade to create persistent trailing glow
+  trailCtx.globalCompositeOperation = 'source-over';
+  trailCtx.fillStyle = `rgba(0,0,0,${0.08 + (100-settings.fxIntensity)/200})`;
+  trailCtx.fillRect(0,0,trailCanvas.width/DPR, trailCanvas.height/DPR);
+  // paint snake trail points
+  snakeA.drawTrailToOffscreen(trailCtx);
+  snakeB.drawTrailToOffscreen(trailCtx);
+  // apply a cheap "blur" by drawing trailCanvas scaled down/up (cheap bloom)
+  if (settings.trail){
+    const tempScale = 0.35 + Math.max(0, (settings.fxIntensity/100));
+    const tw = trailCanvas.width/DPR, th = trailCanvas.height/DPR;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.85;
+    // scale smaller then draw bigger for blur
+    ctx.drawImage(trailCanvas, 0, 0, tw*tempScale, th*tempScale, 0, 0, W, H);
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(trailCanvas, 0, 0, tw*0.6, th*0.6, 0, 0, W, H);
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(trailCanvas, 0, 0, tw, th, 0, 0, W, H);
+    ctx.restore();
+  }
+
+  // 7) main snake bodies (on top)
+  snakeA.drawMain(ctx);
+  snakeB.drawMain(ctx);
+
+  // 8) optional double-vision (decoy)
+  if (snakeA.double){
+    ctx.save();
+    const jitter = Math.sin(now*0.002)*6 + 6;
+    ctx.translate(jitter, Math.cos(now*0.001)*4);
+    ctx.globalAlpha = 0.28 * (settings.fxIntensity/90);
+    snakeA.drawMain(ctx);
+    ctx.restore();
+  }
+  if (snakeB.double){
+    ctx.save();
+    const jitter = Math.sin(now*0.002+1.3)*6 + 6;
+    ctx.translate(-jitter, Math.cos(now*0.001+0.7)*4);
+    ctx.globalAlpha = 0.28 * (settings.fxIntensity/90);
+    snakeB.drawMain(ctx);
+    ctx.restore();
+  }
+
+  // 9) particles
+  particles.draw(ctx);
+
+  // 10) zones overlay (soft rings already drawn), obstacles highlights
+  // add subtle outlines to obstacles when FX high
+  if (settings.fxIntensity > 60){
+    ctx.save();
+    ctx.translate(GRID.offsetX, GRID.offsetY);
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 0.8;
+    for (const o of obstacles){
+      ctx.strokeRect(o.x*GRID.tile+0.5, o.y*GRID.tile+0.5, o.w*GRID.tile-1, o.h*GRID.tile-1);
+    }
+    ctx.restore();
+  }
+
+  // 11) post FX
+  applyPostFX(ctx, W, H, now);
+
+  // 12) HUD update
+  updateLiveStats();
+
+  // schedule
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* -------------------------
+   Small helpers & boot
+   ------------------------- */
+function updateLiveStats(force){
+  const fxOn = (settings.trail || settings.bgPulse || settings.particles || settings.postOn) ? 'FX On' : 'FX Off';
+  UI.liveStats.textContent = `A ${cumulativeScores.A} · B ${cumulativeScores.B} · ${fxOn}`;
+  if (UI.scoreA && UI.scoreB){
+    UI.scoreA.textContent = cumulativeScores.A;
+    UI.scoreB.textContent = cumulativeScores.B;
+  }
+  // opportunistically persist
+  saveCheckpoint();
+}
+
+/* spawn foods periodically */
+setInterval(()=>{
+  if (running && foods.length < 6) spawnFood();
+}, 1600);
+
+/* utility: prevent space scroll */
+window.addEventListener('keydown', e => { if (e.code === 'Space') e.preventDefault(); });
+window.addEventListener('beforeunload', () => {
+  // best-effort immediate save on navigation away
+  saveCheckpoint(true);
+});
+
+/* helper to create a snake initially and to ensure world is generated */
+loadCheckpoint();
+generateWorld();
+
+/* -------------------------
+   Simple AI steering towards nearest food while avoiding hazards
+   ------------------------- */
+function computeAIMove(me, other){
+  if (!me.alive) return;
+  // choose nearest food by wrapped manhattan distance
+  const dist = (ax,ay,bx,by)=>{
+    const dx = settings.wrapWalls ? Math.min(Math.abs(ax-bx), GRID.cols - Math.abs(ax-bx)) : Math.abs(ax-bx);
+    const dy = settings.wrapWalls ? Math.min(Math.abs(ay-by), GRID.rows - Math.abs(ay-by)) : Math.abs(ay-by);
+    return dx+dy;
+  };
+  const head = me.segments[0];
+  let target = foods[0] || null;
+  let best = Infinity;
+  for (const f of foods){
+    const d = dist(head.x, head.y, f.x, f.y);
+    if (d < best){ best = d; target = f; }
+  }
+  const candidates = [
+    {x:1,y:0}, {x:-1,y:0}, {x:0,y:1}, {x:0,y:-1}
+  ];
+  // avoid reversing directly
+  const nonReverse = candidates.filter(v => !(v.x === -me.dir.x && v.y === -me.dir.y));
+  const moves = nonReverse.length? nonReverse : candidates;
+  // score moves by closeness to target and safety
+  let bestMove = moves[0];
+  let bestScore = -1e9;
+  for (const mv of moves){
+    let nx = head.x + mv.x, ny = head.y + mv.y;
+    if (settings.wrapWalls){
+      if (nx < 0) nx = GRID.cols-1; if (nx >= GRID.cols) nx = 0;
+      if (ny < 0) ny = GRID.rows-1; if (ny >= GRID.rows) ny = 0;
+    }
+    // safety checks
+    let safe = 1;
+    if (!settings.wrapWalls && (nx < 0 || nx >= GRID.cols || ny < 0 || ny >= GRID.rows)) safe = -1000;
+    if (isBlockedCell(nx,ny)) safe = -1000;
+    // self collision (allow stepping onto current tail if not growing)
+    const tailIndex = me.segments.length - 1;
+    const willOccupyTail = (me.grow===0 && me.segments[tailIndex].x === nx && me.segments[tailIndex].y === ny);
+    if (!willOccupyTail && me.segments.some((s,idx)=> idx>0 && s.x===nx && s.y===ny)) safe = -1000;
+    // other snake body
+    if (other.alive && other.segments.some((s,idx)=> s.x===nx && s.y===ny)) safe = -1000;
+    // approach score
+    let approach = 0;
+    if (target){ approach = -dist(nx,ny,target.x,target.y); }
+    // slight randomness to avoid deadlocks
+    const jitter = (Math.random()-0.5)*0.4;
+    const score = safe*1000 + approach + jitter;
+    if (score > bestScore){ bestScore = score; bestMove = mv; }
+  }
+  me.setDir(bestMove.x, bestMove.y);
+}
+
+/* -------------------------
+   Award +1 per second alive while running
+   ------------------------- */
+function tickAliveScoring(dt){
+  if (!running || paused) return;
+  for (const s of snakes){
+    if (!s.alive) continue;
+    s.aliveMsAccumulator += dt;
+    while (s.aliveMsAccumulator >= 1000){
+      s.aliveMsAccumulator -= 1000;
+      cumulativeScores[s.id] += 1;
+      saveCheckpoint();
+    }
+  }
+}
+
+/* END */
+</script>
+</body>
+</html>
+

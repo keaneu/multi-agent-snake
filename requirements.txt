@@ -1,0 +1,17 @@
+# Core dependencies for Multi-Agent Snake AI System
+pygame>=2.5.0
+torch>=2.0.0
+numpy>=1.21.0
+
+# Optional dependencies for enhanced features
+matplotlib>=3.5.0
+jupyter>=1.0.0
+
+# Development dependencies (optional)
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0
+
+# Note: Install PyTorch with appropriate CUDA support if using GPU training
+# For CPU-only: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# For CUDA: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
