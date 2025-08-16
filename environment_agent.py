@@ -204,6 +204,8 @@ class EnvironmentAgent(BaseAgent):
         
         # Broadcast initial environment
         self.broadcast_environment_update()
+        # Announce readiness
+        self.send_message(MessageType.AGENT_READY, "game_engine", {"agent_id": self.agent_id})
     
     def clear_world(self):
         """Clear all world elements"""

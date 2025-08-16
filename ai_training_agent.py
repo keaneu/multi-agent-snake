@@ -259,6 +259,9 @@ class AITrainingAgent(BaseAgent):
         # Update state
         self.state = self.get_public_state()
         
+        # Announce readiness
+        self.send_message(MessageType.AGENT_READY, "game_engine", {"agent_id": self.agent_id})
+
         print(f"✅ AI Training Agent {self.snake_id} ready - State size: {self.state_size}")
     
     def update(self):

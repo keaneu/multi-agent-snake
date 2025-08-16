@@ -23,6 +23,7 @@ class MessageType(Enum):
     ENVIRONMENT_UPDATE = "environment_update"
     GAME_OVER = "game_over"
     RESET_GAME = "reset_game"
+    AGENT_READY = "agent_ready"
 
 @dataclass
 class Message:
