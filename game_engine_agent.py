@@ -39,6 +39,7 @@ class PlayerStats:
     time_alive: float = 0.0
     deaths: int = 0
     last_death_reason: str = ""
+    alive: bool = True
 
 @dataclass
 class GameState:
@@ -87,9 +88,11 @@ class GameEngineAgent(BaseAgent):
         # Agent coordination
         self.required_agents = {
             "snake_logic_A", "snake_logic_B", 
-            "environment", "visualization", "ai_training"
+            "environment", "visualization",
+            "ai_training_A", "ai_training_B"
         }
         self.agent_timeouts = {}
+        self.initial_check_done = False
         
     def initialize(self):
         """Initialize the game engine"""
@@ -102,24 +105,22 @@ class GameEngineAgent(BaseAgent):
             MessageType.GAME_OVER,
             MessageType.RESET_GAME,
             MessageType.AI_DECISION,
-            MessageType.ENVIRONMENT_UPDATE
+            MessageType.ENVIRONMENT_UPDATE,
+            MessageType.AGENT_READY
         ])
         
         # Initialize game state
-        self.game_state.phase = GamePhase.READY
+        self.game_state.phase = GamePhase.INITIALIZING # Start in initializing phase
         self.game_state.last_update_time = time.time()
-        self.round_start_time = time.time()
         
         # Broadcast initial configuration
         self.broadcast_config()
         
-        # Wait for agents to be ready
-        self.wait_for_agents()
+        print(f"✅ Game Engine initialized and waiting for agents...")
         
-        print(f"✅ Game Engine ready - Config: {self.config.grid_width}x{self.config.grid_height} @ {self.config.target_fps}fps")
-        
-    def wait_for_agents(self, timeout: float = 5.0):
+    def wait_for_agents(self, timeout: float = 10.0):
         """Wait for required agents to come online"""
+        print("⏳ Waiting for agents to report ready status...")
         start_time = time.time()
         
         while time.time() - start_time < timeout:
@@ -166,7 +167,14 @@ class GameEngineAgent(BaseAgent):
         self.update_fps_tracking(dt)
         
         # Update game based on current phase
-        if self.game_state.phase == GamePhase.RUNNING:
+        if self.game_state.phase == GamePhase.INITIALIZING:
+            if not self.initial_check_done:
+                self.wait_for_agents()
+                self.initial_check_done = True
+                self.game_state.phase = GamePhase.READY
+                print(f"✅ Game Engine ready - Config: {self.config.grid_width}x{self.config.grid_height} @ {self.config.target_fps}fps")
+
+        elif self.game_state.phase == GamePhase.RUNNING:
             self.update_running_game(dt)
         elif self.game_state.phase == GamePhase.GAME_OVER:
             self.update_game_over()
@@ -266,12 +274,13 @@ class GameEngineAgent(BaseAgent):
         
         self.game_state.phase = GamePhase.READY
         
-        # Reset scores but keep cumulative stats
-        for stats in self.game_state.players.values():
+        # Reset per-round player stats
+        for player_id, stats in self.game_state.players.items():
             stats.score = 0
             stats.foods_eaten = 0
             stats.time_alive = 0.0
             stats.last_death_reason = ""
+            stats.alive = True
     
     def process_message(self, message: Message):
         """Process incoming messages from other agents"""
@@ -295,16 +304,21 @@ class GameEngineAgent(BaseAgent):
             elif message.type == MessageType.ENVIRONMENT_UPDATE:
                 self.handle_environment_update(message.data)
                 
+            elif message.type == MessageType.AGENT_READY:
+                self.handle_agent_ready(message.sender)
+
             # Update agent heartbeat
             self.game_state.last_heartbeat[message.sender] = time.time()
             
-            # Mark agent as ready if it's reporting
-            if message.sender in self.required_agents:
-                self.game_state.agents_ready[message.sender] = True
-                
         except Exception as e:
             print(f"❌ Error processing message from {message.sender}: {e}")
     
+    def handle_agent_ready(self, agent_id: str):
+        """Handle agent ready messages"""
+        if agent_id in self.required_agents:
+            self.game_state.agents_ready[agent_id] = True
+            print(f"👍 Agent {agent_id} reported ready.")
+
     def handle_food_eaten(self, data: Dict[str, Any]):
         """Handle food eaten event"""
         player_id = data.get("player_id", "A")
@@ -329,15 +343,18 @@ class GameEngineAgent(BaseAgent):
         collision_type = data.get("collision_type", "unknown")
         
         if player_id in self.game_state.players:
-            self.game_state.players[player_id].deaths += 1
-            self.game_state.players[player_id].last_death_reason = collision_type
-            self.game_state.players[player_id].score += self.config.collision_penalty
-            
-            print(f"💥 Player {player_id} collision: {collision_type}")
-            
-            # Check if game should end
-            if self.should_end_game_on_collision():
-                self.end_game(f"collision_{collision_type}")
+            stats = self.game_state.players[player_id]
+            if stats.alive: # Process only if player is alive
+                stats.alive = False
+                stats.deaths += 1
+                stats.last_death_reason = collision_type
+                stats.score += self.config.collision_penalty
+
+                print(f"💥 Player {player_id} collision: {collision_type}")
+
+                # Check if game should end
+                if self.should_end_game_on_collision():
+                    self.end_game(f"collision_{collision_type}")
     
     def handle_ai_decision(self, data: Dict[str, Any]):
         """Handle AI decision updates"""
@@ -362,10 +379,10 @@ class GameEngineAgent(BaseAgent):
         return alive_count <= 1
     
     def is_player_dead(self, player_id: str) -> bool:
-        """Check if a player is dead (simplified - would need collision state)"""
-        # This would be determined by collision events
-        # For now, assume players are alive unless explicitly marked dead
-        return False
+        """Check if a player is dead"""
+        if player_id in self.game_state.players:
+            return not self.game_state.players[player_id].alive
+        return True # Assume dead if not in player list
     
     def all_players_dead(self) -> bool:
         """Check if all players are dead"""

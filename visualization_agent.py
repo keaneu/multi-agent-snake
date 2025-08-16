@@ -59,8 +59,8 @@ class RenderSettings:
     
     # Grid settings
     cell_size: int = 20
-    grid_color: Color = Color(40, 40, 40)
-    background_color: Color = Color(10, 10, 15)
+    grid_color: Color = field(default_factory=lambda: Color(40, 40, 40))
+    background_color: Color = field(default_factory=lambda: Color(10, 10, 15))
     
     # Snake colors
     snake_colors: Dict[str, Color] = field(default_factory=lambda: {
@@ -69,12 +69,12 @@ class RenderSettings:
     })
     
     # Food settings
-    food_color: Color = Color(255, 255, 0)  # Yellow
+    food_color: Color = field(default_factory=lambda: Color(255, 255, 0))  # Yellow
     food_size_ratio: float = 0.8
     
     # UI settings
     ui_font_size: int = 16
-    ui_color: Color = Color(255, 255, 255)
+    ui_color: Color = field(default_factory=lambda: Color(255, 255, 255))
     ui_margin: int = 10
     
     # Effects
@@ -150,6 +150,9 @@ class VisualizationAgent(BaseAgent):
             print(f"⚠️  Pygame initialization failed: {e}")
             print("🎨 Running in headless mode")
             self.running = True  # Continue without display
+
+        # Announce readiness
+        self.send_message(MessageType.AGENT_READY, "game_engine", {"agent_id": self.agent_id})
     
     def init_display(self):
         """Initialize Pygame display and resources"""

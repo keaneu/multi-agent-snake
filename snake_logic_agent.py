@@ -502,7 +502,7 @@ class SnakeLogicAgent(BaseAgent):
         self.reset_snake()
         
         # Broadcast that we're ready
-        self.broadcast_snake_update()
+        self.send_message(MessageType.AGENT_READY, "game_engine", {"agent_id": self.agent_id})
     
     def broadcast_snake_update(self):
         """Broadcast current snake state to other agents"""
