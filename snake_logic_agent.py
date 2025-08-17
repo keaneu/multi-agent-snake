@@ -151,12 +151,19 @@ class SnakeLogicAgent(BaseAgent):
         start_x = 3 if self.snake_id == "A" else self.grid_width - 4
         start_y = self.grid_height // 2
         
-        # Create initial snake with 3 segments
-        self.snake_state.segments = [
-            SnakeSegment(Position(start_x, start_y)),
-            SnakeSegment(Position(start_x - 1, start_y)),
-            SnakeSegment(Position(start_x - 2, start_y))
-        ]
+        # Create initial snake with 3 segments based on direction
+        if self.snake_state.direction == Direction.RIGHT:
+            self.snake_state.segments = [
+                SnakeSegment(Position(start_x, start_y)),
+                SnakeSegment(Position(start_x - 1, start_y)),
+                SnakeSegment(Position(start_x - 2, start_y))
+            ]
+        else:  # Direction.LEFT
+            self.snake_state.segments = [
+                SnakeSegment(Position(start_x, start_y)),
+                SnakeSegment(Position(start_x + 1, start_y)),
+                SnakeSegment(Position(start_x + 2, start_y))
+            ]
         
         self.snake_state.direction = Direction.RIGHT if self.snake_id == "A" else Direction.LEFT
         self.snake_state.next_direction = self.snake_state.direction
