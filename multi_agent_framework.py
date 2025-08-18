@@ -24,6 +24,10 @@ class MessageType(Enum):
     GAME_OVER = "game_over"
     RESET_GAME = "reset_game"
     AGENT_READY = "agent_ready"
+    # Replay messages
+    START_REPLAY = "start_replay"
+    PAUSE_GAME = "pause_game"
+    REPLAY_FRAME = "replay_frame"
 
 @dataclass
 class Message:
@@ -123,6 +127,7 @@ class BaseAgent(ABC):
         self.agent_id = agent_id
         self.message_bus: Optional[MessageBus] = None
         self.running = False
+        self.paused = False
         self.thread: Optional[threading.Thread] = None
         self.subscriptions: List[MessageType] = []
         self.state = {}
@@ -178,8 +183,19 @@ class BaseAgent(ABC):
                 # Process incoming messages
                 messages = self.get_messages()
                 for message in messages:
-                    self.process_message(message)
+                    # All agents handle pause messages by default
+                    if message.type == MessageType.PAUSE_GAME:
+                        self.paused = message.data.get("paused", False)
+                        # Special handling for visualization agent to not pause rendering
+                        if self.agent_id == "visualization":
+                            self.paused = False
+                    else:
+                        self.process_message(message)
                 
+                if self.paused:
+                    time.sleep(0.1) # Sleep while paused
+                    continue
+
                 # Execute agent logic
                 self.update()
                 

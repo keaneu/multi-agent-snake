@@ -225,8 +225,8 @@ class GameEngineAgent(BaseAgent):
         """Handle game over state"""
         if not self.round_end_scheduled:
             self.round_end_scheduled = True
-            # Schedule reset after 2 seconds
-            threading.Timer(2.0, self.reset_game).start()
+            # Schedule reset after 3 seconds to allow agents to process game_over
+            threading.Timer(3.0, self.reset_game).start()
     
     def start_new_round(self):
         """Start a new game round"""

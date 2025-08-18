@@ -102,6 +102,7 @@ class VisualizationAgent(BaseAgent):
         self.grid_width = 20
         self.grid_height = 20
         self.game_phase = "initializing"
+        self.replay_mode = False
         
         # Rendering data
         self.snakes: Dict[str, List[Tuple[int, int]]] = {}
@@ -133,7 +134,9 @@ class VisualizationAgent(BaseAgent):
             MessageType.SCORE_UPDATE,
             MessageType.COLLISION_EVENT,
             MessageType.FOOD_EATEN,
-            MessageType.RESET_GAME
+            MessageType.RESET_GAME,
+            MessageType.REPLAY_FRAME,
+            MessageType.PAUSE_GAME
         ])
         
         # Try to initialize Pygame display
@@ -468,6 +471,13 @@ class VisualizationAgent(BaseAgent):
         phase_surface = self.font.render(phase_text, True, color)
         self.screen.blit(phase_surface, (margin, margin))
         
+        # Replay indicator
+        if self.replay_mode:
+            replay_text = "REPLAY"
+            replay_surface = self.font.render(replay_text, True, (255, 0, 0))
+            replay_rect = replay_surface.get_rect(centerx=self.settings.window_width / 2, y=margin)
+            self.screen.blit(replay_surface, replay_rect)
+
         # Scores
         y_offset = margin + 25
         for snake_id, score in self.scores.items():
@@ -500,6 +510,9 @@ class VisualizationAgent(BaseAgent):
         elif key == pygame.K_r:
             # Send reset request
             self.send_message(MessageType.RESET_GAME, "game_engine", {"source": "visualization"})
+        elif key == pygame.K_p:
+            # Send start replay request
+            self.send_message(MessageType.START_REPLAY, "replay_agent", {})
     
     def update_fps_counter(self):
         """Update FPS calculation"""
@@ -560,12 +573,21 @@ class VisualizationAgent(BaseAgent):
                 
             elif message.type == MessageType.RESET_GAME:
                 self.handle_game_reset(message.data)
+
+            elif message.type == MessageType.REPLAY_FRAME:
+                self.handle_replay_frame(message.data)
+
+            elif message.type == MessageType.PAUSE_GAME:
+                self.replay_mode = message.data.get("paused", False)
                 
         except Exception as e:
             print(f"❌ Visualization error processing message: {e}")
     
     def handle_game_state_update(self, data: Dict[str, Any]):
         """Handle game state updates"""
+        if self.replay_mode:
+            return  # Ignore live game state during replay
+
         update_type = data.get("type")
         
         if update_type == "config":
@@ -591,6 +613,17 @@ class VisualizationAgent(BaseAgent):
                 # Add trail point for head
                 if segments and self.settings.show_trail:
                     self.add_trail_point(snake_id, segments[0])
+
+    def handle_replay_frame(self, data: Dict[str, Any]):
+        """Handle a single frame of replay data."""
+        if not self.replay_mode:
+            return # Should not happen, but as a safeguard
+
+        self.snakes = data.get("snakes", {})
+        self.foods = data.get("food", [])
+        self.obstacles = data.get("obstacles", [])
+        self.scores = data.get("scores", {})
+        self.game_phase = data.get("game_phase", "replay")
     
     def handle_environment_update(self, data: Dict[str, Any]):
         """Handle environment updates"""
