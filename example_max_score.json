@@ -1,0 +1,44 @@
+{
+  "multiple_choice": [
+    {
+      "question": "What is the capital of France?",
+      "options": {
+        "A": "London",
+        "B": "Paris",
+        "C": "Berlin",
+        "D": "Madrid"
+      },
+      "answer": "B"
+    },
+    {
+      "question": "Which planet is known as the Red Planet?",
+      "options": {
+        "A": "Earth",
+        "B": "Mars",
+        "C": "Jupiter",
+        "D": "Venus"
+      },
+      "answer": "B"
+    }
+  ],
+  "short_answer": [
+    {
+      "question": "Who wrote 'To Kill a Mockingbird'?",
+      "answer": "Harper Lee"
+    },
+    {
+      "question": "What is the chemical symbol for water?",
+      "answer": "H2O"
+    }
+  ],
+  "long_answer": [
+    {
+      "question": "Explain the theory of relativity.",
+      "answer": "The theory of relativity, developed by Albert Einstein, is a cornerstone of modern physics. It is divided into two parts: special relativity and general relativity. Special relativity deals with the relationship between space and time for objects moving at constant speeds. General relativity is a theory of gravitation that describes gravity as a property of the curvature of spacetime."
+    },
+    {
+      "question": "Describe the process of photosynthesis.",
+      "answer": "Photosynthesis is the process used by plants, algae, and some bacteria to convert light energy into chemical energy, through a process that converts carbon dioxide and water into glucose (sugar) and oxygen. This process is essential for life on Earth as it produces most of the oxygen in the atmosphere."
+    }
+  ]
+}
