@@ -107,7 +107,7 @@ class MultiAgentSnakeGame:
         self.agents['ai_b'] = AITrainingAgent("B", ai_config_b)
         
         # 6. Replay Agent
-        self.agents['replay'] = ReplayAgent(high_score_threshold=50)
+        self.agents['replay'] = ReplayAgent(high_score_threshold=10)
 
         print(f"✅ Created {len(self.agents)} agents")
     
@@ -363,8 +363,8 @@ def main():
         # Run test scenario
         game.run_test_scenario()
         
-        # Monitor the system (run for 30 seconds to test replay capture)
-        game.monitor_system(duration=30)
+        # Monitor the system (run for 1650 seconds for extended training)
+        game.monitor_system(duration=1650)
         
     except Exception as e:
         print(f"❌ System error: {e}")

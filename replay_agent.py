@@ -122,7 +122,7 @@ class ReplayAgent(BaseAgent):
     def handle_game_over(self, data: dict):
         """Handle game over to save high-score episodes."""
         final_scores = data.get("final_scores", {})
-        total_score = sum(final_scores.values())
+        total_score = sum(final_scores.values()) if final_scores else 0
         max_individual_score = max(final_scores.values()) if final_scores else 0
 
         # Save if either total score OR any individual score exceeds threshold
