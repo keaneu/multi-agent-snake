@@ -12,6 +12,7 @@ from snake_logic_agent import SnakeLogicAgent
 from visualization_agent import VisualizationAgent, RenderSettings
 from environment_agent import EnvironmentAgent, EnvironmentConfig
 from ai_training_agent import AITrainingAgent, TrainingConfig
+from replay_agent import ReplayAgent
 
 class MultiAgentSnakeGame:
     """Complete multi-agent Snake game system"""
@@ -105,6 +106,9 @@ class MultiAgentSnakeGame:
         self.agents['ai_a'] = AITrainingAgent("A", ai_config_a)
         self.agents['ai_b'] = AITrainingAgent("B", ai_config_b)
         
+        # 6. Replay Agent
+        self.agents['replay'] = ReplayAgent(high_score_threshold=150)
+
         print(f"✅ Created {len(self.agents)} agents")
     
     def register_agents(self):
