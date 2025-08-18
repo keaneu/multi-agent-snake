@@ -87,7 +87,7 @@ class MultiAgentSnakeGame:
             hidden_size=128,
             learning_rate=0.001,
             epsilon_start=0.9,
-            epsilon_decay=0.995,
+            epsilon_decay=0.999,
             memory_size=5000,
             batch_size=32,
             model_save_path="snake_ai_model_A.pth"
@@ -97,7 +97,7 @@ class MultiAgentSnakeGame:
             hidden_size=128,
             learning_rate=0.001,
             epsilon_start=0.9,
-            epsilon_decay=0.995,
+            epsilon_decay=0.999,
             memory_size=5000,
             batch_size=32,
             model_save_path="snake_ai_model_B.pth"
@@ -363,8 +363,8 @@ def main():
         # Run test scenario
         game.run_test_scenario()
         
-        # Monitor the system (run for 60 seconds or until interrupted)
-        game.monitor_system(duration=60)
+        # Monitor the system (run for 1650 seconds or until interrupted)
+        game.monitor_system(duration=1650)
         
     except Exception as e:
         print(f"❌ System error: {e}")
