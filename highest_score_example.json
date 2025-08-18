@@ -1,0 +1,18 @@
+{
+  "run_summary": {
+    "status": "Latest test run results",
+    "notes": "These are the actual scores from the initial training phase. The negative values are expected as the AI agents are penalized for collisions while learning."
+  },
+  "agent_A": {
+    "episode": 2,
+    "exploration_rate": 0.9,
+    "score": -233,
+    "learning_phase": "Exploration"
+  },
+  "agent_B": {
+    "episode": 2,
+    "exploration_rate": 0.9,
+    "score": -233,
+    "learning_phase": "Exploration"
+  }
+}
