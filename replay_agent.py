@@ -123,16 +123,21 @@ class ReplayAgent(BaseAgent):
         """Handle game over to save high-score episodes."""
         final_scores = data.get("final_scores", {})
         total_score = sum(final_scores.values())
+        max_individual_score = max(final_scores.values()) if final_scores else 0
 
-        if total_score > self.high_score_threshold:
-            self.save_episode(total_score)
+        # Save if either total score OR any individual score exceeds threshold
+        if total_score > self.high_score_threshold or max_individual_score > self.high_score_threshold:
+            score_to_save = max(total_score, max_individual_score)
+            print(f"🎥 HIGH SCORE DETECTED! Saving episode with score {score_to_save}")
+            self.save_episode(score_to_save)
 
     def save_episode(self, final_score: int):
         """Save the recorded episode to a file."""
         if not self.current_episode_frames:
+            print("⚠️  No frames recorded for episode")
             return
 
-        episode_id = f"episode_{int(time.time())}"
+        episode_id = f"episode_{int(time.time())}_score_{final_score}"
         episode = ReplayEpisode(
             episode_id=episode_id,
             final_score=final_score,
@@ -144,6 +149,7 @@ class ReplayAgent(BaseAgent):
             json.dump(episode.__dict__, f, indent=2)
 
         print(f"🎥 Saved high-score episode {episode_id} with score {final_score} to {filename}")
+        print(f"📊 Episode contains {len(self.current_episode_frames)} frames")
 
     def handle_game_reset(self, data: dict):
         """Handle game reset to start a new recording."""
