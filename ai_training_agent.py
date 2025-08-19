@@ -20,10 +20,17 @@ try:
     import torch.nn as nn
     import torch.optim as optim
     import torch.nn.functional as F
+    from enhanced_dqn import EnhancedDQN, ReplayInformedTrainer, create_enhanced_dqn
+    from hrm_enhanced_dqn import HRMEnhancedDQN, HRMReplayInformedTrainer, create_hrm_enhanced_dqn
     TORCH_AVAILABLE = True
-except ImportError:
+    ENHANCED_DQN_AVAILABLE = True
+    HRM_AVAILABLE = True
+except ImportError as e:
     TORCH_AVAILABLE = False
-    print("⚠️  PyTorch not available, using simplified Q-learning")
+    ENHANCED_DQN_AVAILABLE = False
+    HRM_AVAILABLE = False
+    print(f"⚠️  PyTorch, Enhanced DQN, or HRM not available: {e}")
+    print("⚠️  Using simplified Q-learning")
 
 class Action(Enum):
     STRAIGHT = 0
@@ -61,6 +68,11 @@ class TrainingConfig:
     # Model persistence
     model_save_path: str = "snake_ai_model.pth"
     stats_save_path: str = "training_stats.json"
+    
+    # HRM (Hierarchical Reasoning Model) parameters
+    use_hrm: bool = True
+    hrm_hierarchical_loss_weight: float = 0.3
+    hrm_goal_value_loss_weight: float = 0.2
 
 @dataclass
 class Experience:
@@ -200,15 +212,63 @@ class AITrainingAgent(BaseAgent):
         self.action_size = len(Action)
         
         # Initialize neural network
-        if TORCH_AVAILABLE:
+        if TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE and HRM_AVAILABLE and self.config.use_hrm:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            print(f"🧠🏗️ Initializing HRM-Enhanced DQN with hierarchical reasoning for Snake {snake_id}")
+            
+            # Use HRM-Enhanced DQN with replay embeddings and hierarchical reasoning
+            self.q_network = create_hrm_enhanced_dqn(
+                input_size=self.state_size,
+                hidden_size=self.config.hidden_size,
+                output_size=self.action_size
+            ).to(self.device)
+            
+            self.target_network = create_hrm_enhanced_dqn(
+                input_size=self.state_size,
+                hidden_size=self.config.hidden_size,
+                output_size=self.action_size
+            ).to(self.device)
+            
+            # Use HRM replay-informed trainer
+            self.trainer = HRMReplayInformedTrainer(self.q_network, self.config.learning_rate)
+            self.update_target_network()
+            
+            # HRM-specific tracking
+            self.hierarchical_rewards = deque(maxlen=100)
+            self.goal_completions = deque(maxlen=100)
+            
+        elif TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            print(f"🧠 Initializing Enhanced DQN with replay embeddings for Snake {snake_id}")
+            
+            # Use Enhanced DQN with replay embeddings
+            self.q_network = create_enhanced_dqn(
+                input_size=self.state_size,
+                hidden_size=self.config.hidden_size,
+                output_size=self.action_size
+            ).to(self.device)
+            
+            self.target_network = create_enhanced_dqn(
+                input_size=self.state_size,
+                hidden_size=self.config.hidden_size,
+                output_size=self.action_size
+            ).to(self.device)
+            
+            # Use replay-informed trainer
+            self.trainer = ReplayInformedTrainer(self.q_network, self.config.learning_rate)
+            self.update_target_network()
+            
+        elif TORCH_AVAILABLE:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.q_network = DQN(self.state_size, self.config.hidden_size, self.action_size).to(self.device)
             self.target_network = DQN(self.state_size, self.config.hidden_size, self.action_size).to(self.device)
             self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.config.learning_rate)
             self.update_target_network()
+            self.trainer = None
         else:
             self.q_network = SimpleDQN(self.state_size, self.config.hidden_size, self.action_size, self.config.learning_rate)
             self.target_network = SimpleDQN(self.state_size, self.config.hidden_size, self.action_size, self.config.learning_rate)
+            self.trainer = None
         
         # Experience replay
         self.memory = deque(maxlen=self.config.memory_size)
@@ -538,12 +598,53 @@ class AITrainingAgent(BaseAgent):
         return proximities
     
     def choose_action(self, state: np.ndarray) -> Action:
-        """Choose action using epsilon-greedy policy"""
+        """Choose action using epsilon-greedy policy with HRM hierarchical reasoning"""
         if random.random() < self.epsilon:
             return random.choice(list(Action))
         else:
-            q_values = self.get_q_values(state)
-            return Action(np.argmax(q_values))
+            # Use HRM-enhanced action selection if available
+            if (hasattr(self, 'q_network') and 
+                hasattr(self.q_network, 'get_action_with_hrm_explanation') and 
+                TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE and HRM_AVAILABLE and self.config.use_hrm):
+                
+                state_tensor = torch.FloatTensor(state).to(self.device)
+                action_idx, explanation = self.q_network.get_action_with_hrm_explanation(state_tensor, epsilon=0.0)
+                
+                # Log HRM decision explanation periodically
+                if self.training_step % 500 == 0:
+                    print(f"🧠🏗️ Snake {self.snake_id} HRM Decision: Action {action_idx}")
+                    print(f"   Decision type: {explanation['decision_type']}")
+                    print(f"   Active goals: {explanation.get('active_goals', [])}")
+                    print(f"   HRM confidence: {explanation.get('dqn_confidence', 0):.3f}")
+                    print(f"   Active option: {explanation.get('active_option', 'None')}")
+                
+                # Track hierarchical rewards if available
+                if hasattr(self.q_network, 'hrm') and hasattr(self, 'hierarchical_rewards'):
+                    hrm_metrics = self.q_network.get_hrm_metrics()
+                    if 'hierarchical_reward' in hrm_metrics:
+                        self.hierarchical_rewards.append(hrm_metrics['hierarchical_reward'])
+                
+                return Action(action_idx)
+            
+            # Fallback to enhanced DQN action selection
+            elif (hasattr(self, 'q_network') and 
+                  hasattr(self.q_network, 'get_action_with_explanation') and 
+                  TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE):
+                
+                state_tensor = torch.FloatTensor(state).to(self.device)
+                action_idx, explanation = self.q_network.get_action_with_explanation(state_tensor, epsilon=0.0)
+                
+                # Log decision explanation periodically
+                if self.training_step % 500 == 0:
+                    print(f"🧠 Snake {self.snake_id} Enhanced Decision: Action {action_idx}, "
+                          f"Confidence: {explanation['confidence']:.3f}, "
+                          f"Replay-informed: {explanation['replay_informed']}")
+                
+                return Action(action_idx)
+            else:
+                # Standard Q-value selection
+                q_values = self.get_q_values(state)
+                return Action(np.argmax(q_values))
     
     def get_q_values(self, state: np.ndarray) -> np.ndarray:
         """Get Q-values for given state"""
@@ -570,19 +671,32 @@ class AITrainingAgent(BaseAgent):
         return direction_map[self.snake_direction][action_name]
     
     def calculate_reward(self, event_type: str, data: Dict[str, Any]) -> float:
-        """Calculate reward based on game events"""
-        reward = 0.0
+        """Calculate reward based on game events with HRM hierarchical bonuses"""
+        base_reward = 0.0
         
         if event_type == "food_eaten":
-            reward = self.config.food_reward
+            base_reward = self.config.food_reward
         elif event_type == "collision":
-            reward = self.config.death_penalty
+            base_reward = self.config.death_penalty
         elif event_type == "step":
-            reward = self.config.step_penalty
+            base_reward = self.config.step_penalty
         elif event_type == "survival":
-            reward = self.config.survival_reward
+            base_reward = self.config.survival_reward
         
-        return reward
+        # Add HRM hierarchical reward if available
+        if (hasattr(self, 'q_network') and hasattr(self.q_network, 'update_hrm_rewards') and
+            TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE and HRM_AVAILABLE and self.config.use_hrm):
+            
+            done = (event_type == "collision")
+            hierarchical_bonus = self.q_network.update_hrm_rewards(base_reward, done)
+            
+            # Track hierarchical rewards for monitoring
+            if hasattr(self, 'hierarchical_rewards'):
+                self.hierarchical_rewards.append(hierarchical_bonus)
+            
+            return base_reward + hierarchical_bonus
+        
+        return base_reward
     
     def store_experience(self, state: np.ndarray, action: int, reward: float, 
                         next_state: np.ndarray, done: bool):
@@ -620,22 +734,32 @@ class AITrainingAgent(BaseAgent):
         next_states = torch.FloatTensor(next_states).to(self.device)
         dones = torch.BoolTensor(dones).to(self.device)
         
-        # Current Q values
-        current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
-        
-        # Next Q values from target network
-        next_q_values = self.target_network(next_states).max(1)[0].detach()
-        target_q_values = rewards + (self.config.gamma * next_q_values * ~dones)
-        
-        # Compute loss
-        loss = F.mse_loss(current_q_values.squeeze(), target_q_values)
-        
-        # Optimize
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        
-        self.stats.loss = loss.item()
+        # Use enhanced trainer if available
+        if hasattr(self, 'trainer') and self.trainer is not None:
+            loss = self.trainer.train_step(states, actions, rewards, next_states, dones, self.config.gamma)
+            self.stats.loss = loss
+            
+            # Periodically update replay patterns
+            if self.training_step % 1000 == 0:
+                self.trainer.update_replay_patterns()
+        else:
+            # Fallback to standard training
+            # Current Q values
+            current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
+            
+            # Next Q values from target network
+            next_q_values = self.target_network(next_states).max(1)[0].detach()
+            target_q_values = rewards + (self.config.gamma * next_q_values * ~dones)
+            
+            # Compute loss
+            loss = F.mse_loss(current_q_values.squeeze(), target_q_values)
+            
+            # Optimize
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+            
+            self.stats.loss = loss.item()
     
     def train_simple_network(self, states, actions, rewards, next_states, dones):
         """Train simple numpy neural network"""
@@ -896,8 +1020,8 @@ class AITrainingAgent(BaseAgent):
         self.game_active = False
     
     def get_public_state(self) -> Dict[str, Any]:
-        """Get public state for monitoring"""
-        return {
+        """Get public state for monitoring with HRM metrics"""
+        base_state = {
             "snake_id": self.snake_id,
             "episode": self.episode_count,
             "epsilon": self.epsilon,
@@ -909,8 +1033,43 @@ class AITrainingAgent(BaseAgent):
             "game_active": self.game_active,
             "avg_reward": np.mean(self.episode_rewards) if self.episode_rewards else 0,
             "avg_length": np.mean(self.episode_lengths) if self.episode_lengths else 0,
-            "network_type": "PyTorch" if TORCH_AVAILABLE else "Simple"
         }
+        
+        # Add network type with HRM indication
+        if TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE and HRM_AVAILABLE and self.config.use_hrm:
+            base_state["network_type"] = "HRM-Enhanced DQN"
+            
+            # Add HRM-specific metrics
+            if hasattr(self, 'hierarchical_rewards'):
+                base_state["avg_hierarchical_reward"] = (
+                    np.mean(self.hierarchical_rewards) if self.hierarchical_rewards else 0
+                )
+                base_state["hierarchical_reward_std"] = (
+                    np.std(self.hierarchical_rewards) if len(self.hierarchical_rewards) > 1 else 0
+                )
+            
+            # Add HRM system metrics if available
+            if hasattr(self, 'q_network') and hasattr(self.q_network, 'get_hrm_metrics'):
+                try:
+                    hrm_metrics = self.q_network.get_hrm_metrics()
+                    base_state.update({
+                        "active_goals": hrm_metrics.get('active_goals', 0),
+                        "completed_goals": hrm_metrics.get('completed_goals', 0),
+                        "total_goals": hrm_metrics.get('total_goals', 0),
+                        "avg_option_success_rate": hrm_metrics.get('average_option_success_rate', 0),
+                        "hrm_step_count": hrm_metrics.get('step_count', 0)
+                    })
+                except Exception as e:
+                    print(f"⚠️ Error getting HRM metrics: {e}")
+                    
+        elif TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE:
+            base_state["network_type"] = "Enhanced DQN"
+        elif TORCH_AVAILABLE:
+            base_state["network_type"] = "PyTorch DQN"
+        else:
+            base_state["network_type"] = "Simple"
+        
+        return base_state
 
 if __name__ == "__main__":
     # Test the AI training agent

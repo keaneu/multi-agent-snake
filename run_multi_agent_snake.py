@@ -107,7 +107,7 @@ class MultiAgentSnakeGame:
         self.agents['ai_b'] = AITrainingAgent("B", ai_config_b)
         
         # 6. Replay Agent
-        self.agents['replay'] = ReplayAgent(high_score_threshold=20)
+        self.agents['replay'] = ReplayAgent(high_score_threshold=10)
 
         print(f"✅ Created {len(self.agents)} agents")
     
