@@ -84,7 +84,7 @@ class EnhancedDQN(nn.Module):
         
         # Replay manager for getting embeddings
         if self.use_replay_embeddings:
-            self.replay_manager = HighScoreReplayManager(min_score_threshold=100)
+            self.replay_manager = HighScoreReplayManager(min_score_threshold=50)
             print(f"🎯 Enhanced DQN initialized with {len(self.replay_manager.replay_patterns)} replay patterns")
     
     def _init_weights(self, module):

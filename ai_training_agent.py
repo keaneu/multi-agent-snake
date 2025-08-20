@@ -59,11 +59,19 @@ class TrainingConfig:
     train_freq: int = 4  # Train every N steps
     save_freq: int = 1000  # Save model every N episodes
     
-    # Reward system
-    food_reward: float = 10.0
-    death_penalty: float = -10.0
-    step_penalty: float = -0.01
-    survival_reward: float = 0.1
+    # Phase 6: Super Elite Performance - Breakthrough 60+ point performance
+    food_reward: float = 25.0    # Maximum food reward for breakthrough performance
+    death_penalty: float = -25.0 # Maximum penalty for ultra-precise risk assessment
+    step_penalty: float = -0.001 # Ultra-minimal penalty for marathon gameplay
+    survival_reward: float = 0.5 # Maximum longevity reward for breakthrough games
+    
+    # Phase 6 Super Elite Performance Rewards - Targeting 60+ breakthrough performance
+    food_proximity_reward: float = 3.0      # 3x from base - ultra food seeking
+    wall_avoidance_reward: float = 0.20     # Reduced safety for calculated ultra-risks
+    efficient_movement_reward: float = 0.50  # 2.5x - ultra-efficient movement patterns
+    length_progression_reward: float = 4.0   # Maximum growth rewards for long games
+    safe_exploration_reward: float = 0.75    # 2.5x - ultra-strategic exploration
+    strategic_positioning_reward: float = 1.5  # 3x - breakthrough positioning strategies
     
     # Model persistence
     model_save_path: str = "snake_ai_model.pth"
@@ -597,6 +605,184 @@ class AITrainingAgent(BaseAgent):
         
         return proximities
     
+    def calculate_intermediate_rewards(self) -> float:
+        """Calculate dense intermediate rewards for continuous learning"""
+        if not self.snake_segments:
+            return 0.0
+            
+        total_intermediate_reward = 0.0
+        head_pos = self.snake_segments[0]
+        
+        # 1. Food Proximity Reward - reward for getting closer to food
+        food_proximity_reward = self.calculate_food_proximity_reward(head_pos)
+        total_intermediate_reward += food_proximity_reward
+        
+        # 2. Wall Avoidance Reward - reward for maintaining safe distance from walls
+        wall_avoidance_reward = self.calculate_wall_avoidance_reward(head_pos)
+        total_intermediate_reward += wall_avoidance_reward
+        
+        # 3. Efficient Movement Reward - reward for not moving in circles
+        efficient_movement_reward = self.calculate_efficient_movement_reward(head_pos)
+        total_intermediate_reward += efficient_movement_reward
+        
+        # 4. Safe Exploration Reward - reward for exploring new areas safely
+        safe_exploration_reward = self.calculate_safe_exploration_reward(head_pos)
+        total_intermediate_reward += safe_exploration_reward
+        
+        # 5. Strategic Positioning Reward - reward for good positioning relative to other snakes
+        strategic_positioning_reward = self.calculate_strategic_positioning_reward(head_pos)
+        total_intermediate_reward += strategic_positioning_reward
+        
+        return total_intermediate_reward
+    
+    def calculate_food_proximity_reward(self, head_pos: Tuple[int, int]) -> float:
+        """Reward for moving closer to food"""
+        if not self.foods:
+            return 0.0
+            
+        # Find nearest food
+        x, y = head_pos
+        nearest_food = min(self.foods, key=lambda f: abs(f[0] - x) + abs(f[1] - y))
+        current_distance = abs(nearest_food[0] - x) + abs(nearest_food[1] - y)
+        
+        # Store previous distance if not exists
+        if not hasattr(self, '_prev_food_distance'):
+            self._prev_food_distance = current_distance
+            return 0.0
+            
+        # Reward for getting closer, penalty for getting farther
+        distance_change = self._prev_food_distance - current_distance
+        self._prev_food_distance = current_distance
+        
+        # Scale reward based on improvement
+        proximity_reward = distance_change * self.config.food_proximity_reward
+        
+        # Bonus for being very close to food
+        if current_distance <= 2:
+            proximity_reward += self.config.food_proximity_reward * 0.5
+            
+        return proximity_reward
+    
+    def calculate_wall_avoidance_reward(self, head_pos: Tuple[int, int]) -> float:
+        """Reward for maintaining safe distance from walls"""
+        x, y = head_pos
+        
+        # Calculate minimum distance to any wall
+        min_wall_distance = min(
+            x,  # distance to left wall
+            y,  # distance to top wall
+            self.grid_width - 1 - x,  # distance to right wall
+            self.grid_height - 1 - y   # distance to bottom wall
+        )
+        
+        # Reward for maintaining safe distance (at least 2 cells from wall)
+        if min_wall_distance >= 3:
+            return self.config.wall_avoidance_reward
+        elif min_wall_distance >= 2:
+            return self.config.wall_avoidance_reward * 0.5
+        elif min_wall_distance >= 1:
+            return self.config.wall_avoidance_reward * 0.1
+        else:
+            return -self.config.wall_avoidance_reward  # Penalty for being too close
+    
+    def calculate_efficient_movement_reward(self, head_pos: Tuple[int, int]) -> float:
+        """Reward for efficient movement patterns (avoiding loops)"""
+        # Track recent positions to detect loops
+        if not hasattr(self, '_recent_positions'):
+            self._recent_positions = deque(maxlen=8)
+            
+        self._recent_positions.append(head_pos)
+        
+        if len(self._recent_positions) < 4:
+            return 0.0
+            
+        # Penalty for visiting same position recently
+        position_counts = {}
+        for pos in self._recent_positions:
+            position_counts[pos] = position_counts.get(pos, 0) + 1
+            
+        max_visits = max(position_counts.values())
+        
+        if max_visits >= 3:  # Visiting same position 3+ times recently
+            return -self.config.efficient_movement_reward
+        elif max_visits >= 2:  # Visiting same position twice
+            return -self.config.efficient_movement_reward * 0.5
+        else:
+            return self.config.efficient_movement_reward * 0.3  # Small reward for good movement
+    
+    def calculate_safe_exploration_reward(self, head_pos: Tuple[int, int]) -> float:
+        """Reward for exploring new areas while maintaining safety"""
+        x, y = head_pos
+        
+        # Track explored positions
+        if not hasattr(self, '_explored_positions'):
+            self._explored_positions = set()
+            
+        # Check if this is a new position
+        is_new_position = head_pos not in self._explored_positions
+        self._explored_positions.add(head_pos)
+        
+        if not is_new_position:
+            return 0.0
+            
+        # Check safety of current position (no immediate dangers)
+        dangers = self.get_danger_detection(head_pos)
+        danger_count = sum(dangers)
+        
+        # Reward for safe exploration
+        if danger_count == 0:  # No dangers
+            return self.config.safe_exploration_reward
+        elif danger_count == 1:  # One danger (manageable)
+            return self.config.safe_exploration_reward * 0.5
+        else:  # Multiple dangers
+            return 0.0
+    
+    def calculate_strategic_positioning_reward(self, head_pos: Tuple[int, int]) -> float:
+        """Reward for good strategic positioning relative to other snakes"""
+        if not self.other_snakes:
+            return 0.0
+            
+        x, y = head_pos
+        total_positioning_reward = 0.0
+        
+        for other_snake_segments in self.other_snakes.values():
+            if not other_snake_segments:
+                continue
+                
+            other_head = other_snake_segments[0]
+            other_x, other_y = other_head
+            
+            # Distance to other snake's head
+            distance_to_other = abs(other_x - x) + abs(other_y - y)
+            
+            # Reward for maintaining optimal distance (not too close, not too far)
+            if 4 <= distance_to_other <= 8:  # Optimal distance range
+                total_positioning_reward += self.config.strategic_positioning_reward
+            elif 2 <= distance_to_other < 4:  # Close but manageable
+                total_positioning_reward += self.config.strategic_positioning_reward * 0.3
+            elif distance_to_other < 2:  # Too close - dangerous
+                total_positioning_reward -= self.config.strategic_positioning_reward
+                
+            # Bonus for being longer than other snake
+            if len(self.snake_segments) > len(other_snake_segments):
+                total_positioning_reward += self.config.strategic_positioning_reward * 0.2
+                
+        return total_positioning_reward
+    
+    def reset_intermediate_reward_tracking(self):
+        """Reset tracking variables for intermediate rewards at episode start"""
+        # Reset food proximity tracking
+        if hasattr(self, '_prev_food_distance'):
+            delattr(self, '_prev_food_distance')
+            
+        # Reset movement efficiency tracking
+        if hasattr(self, '_recent_positions'):
+            self._recent_positions.clear()
+            
+        # Reset exploration tracking every few episodes to encourage re-exploration
+        if hasattr(self, '_explored_positions') and self.episode_count % 20 == 0:
+            self._explored_positions.clear()
+    
     def choose_action(self, state: np.ndarray) -> Action:
         """Choose action using epsilon-greedy policy with HRM hierarchical reasoning"""
         if random.random() < self.epsilon:
@@ -671,32 +857,50 @@ class AITrainingAgent(BaseAgent):
         return direction_map[self.snake_direction][action_name]
     
     def calculate_reward(self, event_type: str, data: Dict[str, Any]) -> float:
-        """Calculate reward based on game events with HRM hierarchical bonuses"""
+        """Calculate reward based on game events with dense intermediate rewards and HRM hierarchical bonuses"""
         base_reward = 0.0
+        intermediate_rewards = 0.0
         
+        # Base event rewards
         if event_type == "food_eaten":
             base_reward = self.config.food_reward
+            # Bonus for length progression
+            length_bonus = len(self.snake_segments) * self.config.length_progression_reward
+            intermediate_rewards += length_bonus
+            
         elif event_type == "collision":
             base_reward = self.config.death_penalty
+            
         elif event_type == "step":
             base_reward = self.config.step_penalty
+            
         elif event_type == "survival":
             base_reward = self.config.survival_reward
+            
+        # Add dense intermediate rewards for survival events
+        if event_type in ["survival", "step"] and self.snake_segments:
+            intermediate_rewards += self.calculate_intermediate_rewards()
+            
+            # Debug logging for intermediate rewards (every 50 steps)
+            if self.training_step % 50 == 0 and intermediate_rewards != 0:
+                print(f"🎯 Snake {self.snake_id} intermediate rewards: {intermediate_rewards:.3f} (base: {base_reward:.3f})")
+        
+        total_reward = base_reward + intermediate_rewards
         
         # Add HRM hierarchical reward if available
         if (hasattr(self, 'q_network') and hasattr(self.q_network, 'update_hrm_rewards') and
             TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE and HRM_AVAILABLE and self.config.use_hrm):
             
             done = (event_type == "collision")
-            hierarchical_bonus = self.q_network.update_hrm_rewards(base_reward, done)
+            hierarchical_bonus = self.q_network.update_hrm_rewards(total_reward, done)
             
             # Track hierarchical rewards for monitoring
             if hasattr(self, 'hierarchical_rewards'):
                 self.hierarchical_rewards.append(hierarchical_bonus)
             
-            return base_reward + hierarchical_bonus
+            return total_reward + hierarchical_bonus
         
-        return base_reward
+        return total_reward
     
     def store_experience(self, state: np.ndarray, action: int, reward: float, 
                         next_state: np.ndarray, done: bool):
@@ -788,7 +992,15 @@ class AITrainingAgent(BaseAgent):
     def update_target_network(self):
         """Update target network with current network weights"""
         if TORCH_AVAILABLE:
-            self.target_network.load_state_dict(self.q_network.state_dict())
+            try:
+                self.target_network.load_state_dict(self.q_network.state_dict())
+            except RuntimeError as e:
+                if "unexpected key" in str(e).lower() or "missing key" in str(e).lower():
+                    # Handle dynamic layer mismatch - copy compatible layers only
+                    print(f"⚠️  Target network update skipped due to dynamic layers: {str(e)[:100]}...")
+                    self._update_target_network_partial()
+                else:
+                    raise e
         else:
             # Copy weights for simple network
             self.target_network.W1 = self.q_network.W1.copy()
@@ -797,6 +1009,30 @@ class AITrainingAgent(BaseAgent):
             self.target_network.b2 = self.q_network.b2.copy()
             self.target_network.W3 = self.q_network.W3.copy()
             self.target_network.b3 = self.q_network.b3.copy()
+    
+    def _update_target_network_partial(self):
+        """Partially update target network, skipping dynamic layers"""
+        try:
+            # Get state dicts
+            source_state = self.q_network.state_dict()
+            target_state = self.target_network.state_dict()
+            
+            # Copy only compatible layers
+            compatible_layers = []
+            for key in source_state.keys():
+                if key in target_state and source_state[key].shape == target_state[key].shape:
+                    target_state[key] = source_state[key].clone()
+                    compatible_layers.append(key)
+            
+            # Load the partially updated state dict
+            self.target_network.load_state_dict(target_state, strict=False)
+            
+            if len(compatible_layers) > 0:
+                print(f"✅ Partial target network update: {len(compatible_layers)} layers copied")
+                
+        except Exception as e:
+            print(f"⚠️  Partial target network update failed: {e}")
+            # Skip this update cycle
     
     def save_model(self):
         """Save the trained model"""
@@ -1001,6 +1237,9 @@ class AITrainingAgent(BaseAgent):
         self.current_state = None
         self.last_action = None
         self.game_active = True
+        
+        # Reset intermediate reward tracking
+        self.reset_intermediate_reward_tracking()
         
         print(f"🎬 Starting episode {self.episode_count} for {self.snake_id}")
     
