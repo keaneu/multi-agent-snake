@@ -299,9 +299,10 @@ class ReplayRNNEmbedding(nn.Module):
 class HighScoreReplayManager:
     """Manages high-score replay data for AI training enhancement"""
     
-    def __init__(self, replay_dir: str = "replays", min_score_threshold: int = 10):
+    def __init__(self, replay_dir: str = "replays", min_score_threshold: int = 45, max_score_threshold: int = 60):
         self.replay_dir = replay_dir
         self.min_score_threshold = min_score_threshold
+        self.max_score_threshold = max_score_threshold
         self.extractor = ReplayFeatureExtractor()
         self.replay_patterns = []
         self.pattern_type_map = {
@@ -323,14 +324,14 @@ class HighScoreReplayManager:
         replay_files = [f for f in os.listdir(self.replay_dir) if f.endswith('.json')]
         high_score_files = []
         
-        # Filter for high-score replays
+        # Filter for elite score range (45-60 replays)
         for filename in replay_files:
             try:
                 # Extract score from filename (e.g., episode_123_score_24.json)
                 if '_score_' in filename:
                     score_part = filename.split('_score_')[1].split('.')[0]
                     score = int(score_part)
-                    if score >= self.min_score_threshold:
+                    if self.min_score_threshold <= score <= self.max_score_threshold:
                         high_score_files.append((filename, score))
             except (ValueError, IndexError):
                 continue
@@ -338,7 +339,7 @@ class HighScoreReplayManager:
         # Sort by score (highest first)
         high_score_files.sort(key=lambda x: x[1], reverse=True)
         
-        print(f"🎯 Loading {len(high_score_files)} high-score replays (≥{self.min_score_threshold} points)")
+        print(f"🎯 Loading {len(high_score_files)} elite replays ({self.min_score_threshold}-{self.max_score_threshold} points)")
         
         # Process each high-score replay
         for filename, score in high_score_files:

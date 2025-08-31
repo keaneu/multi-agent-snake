@@ -1,0 +1,28 @@
+{
+  "episodes_trained": 200,
+  "best_score": 0,
+  "consistency_streak": 0,
+  "foundation_loaded": true,
+  "average_score_last_20": 0.0,
+  "score_improvement_trend": "stable",
+  "breakthrough_count": 0,
+  "consolidation_count": 0,
+  "mastery_count": 0,
+  "avg_hrm_decision_quality": 1.0,
+  "avg_goal_completion_rate": 0,
+  "hrm_session_metrics": {
+    "hierarchical_decisions": 0,
+    "goal_alignments": 0,
+    "strategic_overrides": 0,
+    "tactical_executions": 0,
+    "meta_level_activations": 0
+  },
+  "score_distribution": {
+    "10-14": 50,
+    "15-19": 0,
+    "20-24": 0,
+    "25-29": 0,
+    "30-34": 0,
+    "35+": 0
+  }
+}

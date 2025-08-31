@@ -126,6 +126,86 @@ class ThirtyPlusTrainingPlan:
                 },
                 curriculum_focus="Breakthrough 60+ point performance with ultra-advanced strategies",
                 success_criteria="Consistently achieve 50+ points, target 60+ breakthrough episodes"
+            ),
+            
+            # Phase 7: High Performance (50+ points) - Refined and Consistent
+            TrainingPhase(
+                name="High Performance",
+                duration_minutes=40,
+                score_threshold=45,
+                reward_multipliers={
+                    "food_proximity_reward": 2.5,
+                    "wall_avoidance_reward": 1.0,
+                    "efficient_movement_reward": 2.2,
+                    "safe_exploration_reward": 2.2,
+                    "strategic_positioning_reward": 2.5
+                },
+                curriculum_focus="Consistent 50+ point performance with refined strategies",
+                success_criteria="90% of episodes achieve 45+ points, consistently hit 50+ targets"
+            ),
+            
+            # Phase 8: Expert Performance (70+ points) - Recovery and Enhancement
+            TrainingPhase(
+                name="Expert Performance",
+                duration_minutes=50,
+                score_threshold=60,
+                reward_multipliers={
+                    "food_proximity_reward": 3.5,
+                    "wall_avoidance_reward": 1.5,
+                    "efficient_movement_reward": 3.0,
+                    "safe_exploration_reward": 3.0,
+                    "strategic_positioning_reward": 3.5
+                },
+                curriculum_focus="Expert-level 70+ point performance with enhanced safety and strategic mastery",
+                success_criteria="Consistently achieve 60+ points, target 70+ expert episodes with improved survival"
+            ),
+            
+            # Phase 9: Recovery Training - Back to Basics
+            TrainingPhase(
+                name="Recovery Training",
+                duration_minutes=35,
+                score_threshold=20,
+                reward_multipliers={
+                    "food_proximity_reward": 1.5,
+                    "wall_avoidance_reward": 2.0,
+                    "efficient_movement_reward": 1.0,
+                    "safe_exploration_reward": 1.0,
+                    "strategic_positioning_reward": 1.2
+                },
+                curriculum_focus="Recovery from regression - focus on basic survival and food acquisition",
+                success_criteria="Achieve stable 20+ points, reduce collision rate below 70%"
+            ),
+            
+            # Phase 10: Progressive Recovery - Gradual Complexity Increase
+            TrainingPhase(
+                name="Progressive Recovery",
+                duration_minutes=40,
+                score_threshold=25,
+                reward_multipliers={
+                    "food_proximity_reward": 1.8,
+                    "wall_avoidance_reward": 1.5,
+                    "efficient_movement_reward": 1.2,
+                    "safe_exploration_reward": 1.3,
+                    "strategic_positioning_reward": 1.5
+                },
+                curriculum_focus="Gradual reintroduction of complexity - stable 25+ performance",
+                success_criteria="Consistently achieve 25+ points with 80% success rate, improve movement efficiency"
+            ),
+            
+            # Phase 11: Elite Consolidation - Stabilize 200+ Performance
+            TrainingPhase(
+                name="Elite Consolidation",
+                duration_minutes=45,
+                score_threshold=100,
+                reward_multipliers={
+                    "food_proximity_reward": 2.2,
+                    "wall_avoidance_reward": 1.3,
+                    "efficient_movement_reward": 1.8,
+                    "safe_exploration_reward": 1.6,
+                    "strategic_positioning_reward": 2.0
+                },
+                curriculum_focus="Consolidate and stabilize breakthrough 200+ point performance with elite replay patterns",
+                success_criteria="Consistently maintain 150+ points, stabilize 200+ performance, reduce performance variance"
             )
         ]
     

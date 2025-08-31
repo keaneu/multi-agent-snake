@@ -30,9 +30,10 @@ class ReplayAgent(BaseAgent):
     """
     Records game sessions and can replay high-score episodes.
     """
-    def __init__(self, high_score_threshold: int = 100):
+    def __init__(self, high_score_threshold: int = 100, max_score_threshold: int = None):
         super().__init__("replay_agent")
         self.high_score_threshold = high_score_threshold
+        self.max_score_threshold = max_score_threshold
         self.record_mode = True
         self.replay_mode = False
         self.current_episode_frames: List[ReplayFrame] = []
@@ -125,11 +126,19 @@ class ReplayAgent(BaseAgent):
         total_score = sum(final_scores.values()) if final_scores else 0
         max_individual_score = max(final_scores.values()) if final_scores else 0
 
-        # Save if either total score OR any individual score exceeds threshold
-        if total_score > self.high_score_threshold or max_individual_score > self.high_score_threshold:
-            score_to_save = max(total_score, max_individual_score)
-            print(f"🎥 HIGH SCORE DETECTED! Saving episode with score {score_to_save}")
+        # Save if score is within the specified range
+        score_to_save = max(total_score, max_individual_score)
+        
+        # Check if score meets criteria (min threshold and optional max threshold)
+        meets_min = score_to_save >= self.high_score_threshold
+        meets_max = self.max_score_threshold is None or score_to_save <= self.max_score_threshold
+        
+        if meets_min and meets_max:
+            range_desc = f"{self.high_score_threshold}-{self.max_score_threshold}" if self.max_score_threshold else f"{self.high_score_threshold}+"
+            print(f"🎥 ELITE SCORE DETECTED! Saving episode with score {score_to_save} (target range: {range_desc})")
             self.save_episode(score_to_save)
+        elif score_to_save >= self.high_score_threshold and self.max_score_threshold:
+            print(f"⚠️  Score {score_to_save} above target range ({self.high_score_threshold}-{self.max_score_threshold}), not saving")
 
     def save_episode(self, final_score: int):
         """Save the recorded episode to a file."""

@@ -139,8 +139,8 @@ class QLearningAgent:
         # Q-table: state -> action values
         self.q_table = {}
         
-        # Experience replay
-        self.memory = deque(maxlen=10000)
+        # Experience replay - Phase 44 Legendary Memory Enhancement
+        self.memory = deque(maxlen=1000000)
     
     def get_action(self, state):
         # Epsilon-greedy policy

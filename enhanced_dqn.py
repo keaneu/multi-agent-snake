@@ -82,10 +82,10 @@ class EnhancedDQN(nn.Module):
         # Initialize weights
         self.apply(self._init_weights)
         
-        # Replay manager for getting embeddings
+        # Replay manager for getting embeddings - Elite 40-600 Training (all 40+ score patterns for comprehensive learning)
         if self.use_replay_embeddings:
-            self.replay_manager = HighScoreReplayManager(min_score_threshold=50)
-            print(f"🎯 Enhanced DQN initialized with {len(self.replay_manager.replay_patterns)} replay patterns")
+            self.replay_manager = HighScoreReplayManager(min_score_threshold=40, max_score_threshold=600)
+            print(f"🎯 Enhanced DQN initialized with {len(self.replay_manager.replay_patterns)} replay patterns (40-600 score range)")
     
     def _init_weights(self, module):
         """Initialize network weights using Xavier uniform initialization"""

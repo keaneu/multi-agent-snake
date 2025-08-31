@@ -22,6 +22,7 @@ try:
     import torch.nn.functional as F
     from enhanced_dqn import EnhancedDQN, ReplayInformedTrainer, create_enhanced_dqn
     from hrm_enhanced_dqn import HRMEnhancedDQN, HRMReplayInformedTrainer, create_hrm_enhanced_dqn
+    from test_dense_rewards import DenseRewardCalculator, DenseRewardConfig
     TORCH_AVAILABLE = True
     ENHANCED_DQN_AVAILABLE = True
     HRM_AVAILABLE = True
@@ -45,42 +46,80 @@ class TrainingConfig:
     learning_rate: float = 0.001
     gamma: float = 0.95  # Discount factor
     
-    # Training parameters
-    epsilon_start: float = 1.0
-    epsilon_end: float = 0.01
-    epsilon_decay: float = 0.995
+    # Training parameters - Phase 44 Legendary Survival-First Enhancement
+    epsilon_start: float = 0.1      # Start with mostly exploitation for survival learning
+    epsilon_end: float = 0.05       # Low minimum for focused legendary learning
+    epsilon_decay: float = 0.9999   # Ultra-slow decay for extended legendary learning
     
-    # Experience replay
-    memory_size: int = 10000
-    batch_size: int = 32
+    # Experience replay - Phase 44 Legendary Memory Enhancement
+    memory_size: int = 1000000  # Legendary memory buffer for ascension mastery
+    batch_size: int = 128       # Legendary batch size for ascension learning
     target_update_freq: int = 100
     
-    # Training schedule
-    train_freq: int = 4  # Train every N steps
-    save_freq: int = 1000  # Save model every N episodes
+    # Training schedule - Phase 44 Legendary Learning Enhancement
+    train_freq: int = 1  # Train every step for legendary rapid learning
+    save_freq: int = 50  # Save model every N episodes
     
-    # Phase 6: Super Elite Performance - Breakthrough 60+ point performance
-    food_reward: float = 25.0    # Maximum food reward for breakthrough performance
-    death_penalty: float = -25.0 # Maximum penalty for ultra-precise risk assessment
-    step_penalty: float = -0.001 # Ultra-minimal penalty for marathon gameplay
-    survival_reward: float = 0.5 # Maximum longevity reward for breakthrough games
+# Phase 44: Legendary Ascension - Targeting 60-500 score range with legendary mastery
+    use_dense_rewards: bool = True    # Legendary ascension reward system for legendary mastery
+    food_reward: float = 5000000000.0 # Legendary food reward for ascension acquisition mastery
+    death_penalty: float = 0.0        # Zero penalty maintained for legendary ascension
+    step_penalty: float = 0.0         # Zero step penalty for legendary extended gameplay
+    survival_reward: float = 50000000.0 # Legendary survival reward for ascension excellence
     
-    # Phase 6 Super Elite Performance Rewards - Targeting 60+ breakthrough performance
-    food_proximity_reward: float = 3.0      # 3x from base - ultra food seeking
-    wall_avoidance_reward: float = 0.20     # Reduced safety for calculated ultra-risks
-    efficient_movement_reward: float = 0.50  # 2.5x - ultra-efficient movement patterns
-    length_progression_reward: float = 4.0   # Maximum growth rewards for long games
-    safe_exploration_reward: float = 0.75    # 2.5x - ultra-strategic exploration
-    strategic_positioning_reward: float = 1.5  # 3x - breakthrough positioning strategies
+    # Phase 44: Legendary Ascension Rewards - 60-500 score range legendary optimization
+    food_proximity_reward: float = 3000000000.0 # Legendary proximity reward for ascension targeting
+    wall_avoidance_reward: float = 0.0          # Zero safety emphasis for legendary ascension
+    efficient_movement_reward: float = 6000000000.0 # Legendary movement efficiency for ascension tactics
+    exploration_reward: float = 1500000000.0    # Legendary exploration for ascension positioning
+    length_bonus_per_segment: float = 3000000000.0 # Legendary length bonuses for ascension growth
+    length_progression_reward: float = 10000000000.0 # Legendary ascension growth incentive
+    safe_exploration_reward: float = 2500000000.0 # Legendary safe exploration for ascension mastery
+    strategic_positioning_reward: float = 6000000000.0  # Legendary strategic positioning for ascension performance
+    
+    # Phase 44: Legendary Ascension Milestones - 60-500 score range legendary achievements
+    legendary_60_bonus: float = 100000000000000.0   # Legendary bonus for reaching 60 points
+    ascension_100_bonus: float = 500000000000000.0  # Ascension performance bonus for 100 points
+    mythical_200_bonus: float = 2500000000000000.0  # Mythical mastery bonus for 200 points
+    godmode_400_bonus: float = 10000000000000000.0  # Godmode performance bonus for 400+ points
+    ultra_sequence_bonus: float = 40.0      # Ultra-elite bonus for championship food sequences
+    mastery_growth_bonus: float = 50.0      # Ultra-elite growth milestone rewards
+    ultra_patience_bonus: float = 2.0       # Ultra-elite patience for championship mastery
+    
+    # Ultra-Advanced Championship Bonuses - 25-40 range specialization
+    territorial_supremacy_bonus: float = 3.2   # Bonus for championship territory control
+    multi_food_legend_bonus: float = 4.5       # Bonus for legendary multi-food sequences
+    calculated_aggression_bonus: float = 2.8   # Bonus for championship calculated risks
+    championship_endurance_bonus: float = 2.4  # Bonus for maintaining championship performance
+    
+    # Refined Strategic Bonuses for 20-35 point consolidation
+    territory_control_bonus: float = 0.8    # Moderate territory control development
+    competitive_advantage_bonus: float = 1.5 # Balanced competitive positioning
+    efficiency_mastery_bonus: float = 1.2   # Moderate efficiency optimization
+    
+    # Progressive Enhancement Bonuses - Building intermediate skills
+    progressive_food_bonus: float = 0.7         # Enhanced bonus for consistent food acquisition
+    tactical_movement_bonus: float = 0.4        # Bonus for tactical movement patterns
+    skill_development_bonus: float = 0.3        # Bonus for skill progression milestones
+    efficiency_improvement_bonus: float = 0.5   # Bonus for improving efficiency over time
+    patience_bonus: float = 0.1                 # Missing attribute causing errors
     
     # Model persistence
     model_save_path: str = "snake_ai_model.pth"
     stats_save_path: str = "training_stats.json"
+    memory_save_path: str = "snake_ai_memory.pkl"
     
-    # HRM (Hierarchical Reasoning Model) parameters
+    # HRM (Hierarchical Reasoning Model) parameters - ENABLED for breakthrough strategy
     use_hrm: bool = True
     hrm_hierarchical_loss_weight: float = 0.3
     hrm_goal_value_loss_weight: float = 0.2
+    
+    # Enhanced Exploration Parameters - Breakthrough Strategy
+    enhanced_exploration: bool = True
+    epsilon_boost: float = 0.0       # Disabled for Phase 44 survival-focused learning
+    adaptive_epsilon: bool = True     # Dynamic epsilon based on performance
+    plateau_threshold: int = 10       # Episodes without improvement before boost
+    exploration_schedule: str = "adaptive_breakthrough"
 
 @dataclass
 class Experience:
@@ -211,6 +250,7 @@ class AITrainingAgent(BaseAgent):
         # Snake tracking
         self.snake_segments = []
         self.snake_direction = "RIGHT"
+        self.alive = True  # Snake alive status
         self.foods = []
         self.obstacles = []
         self.other_snakes = {}
@@ -219,10 +259,10 @@ class AITrainingAgent(BaseAgent):
         self.state_size = self.calculate_state_size()
         self.action_size = len(Action)
         
-        # Initialize neural network
+        # Initialize neural network - Phase 8: Breakthrough Strategy
         if TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE and HRM_AVAILABLE and self.config.use_hrm:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            print(f"🧠🏗️ Initializing HRM-Enhanced DQN with hierarchical reasoning for Snake {snake_id}")
+            print(f"🎲🧠 Initializing Breakthrough Strategy: HRM-Enhanced DQN + Enhanced Exploration for Snake {snake_id}")
             
             # Use HRM-Enhanced DQN with replay embeddings and hierarchical reasoning
             self.q_network = create_hrm_enhanced_dqn(
@@ -241,9 +281,21 @@ class AITrainingAgent(BaseAgent):
             self.trainer = HRMReplayInformedTrainer(self.q_network, self.config.learning_rate)
             self.update_target_network()
             
+            # Enhanced Exploration Strategy Components
+            self.exploration_boost_active = True
+            self.plateau_counter = 0
+            self.best_recent_score = 0
+            self.exploration_episodes = 0
+            self.adaptive_epsilon_multiplier = 1.0
+            
             # HRM-specific tracking
             self.hierarchical_rewards = deque(maxlen=100)
             self.goal_completions = deque(maxlen=100)
+            
+            print(f"🎯 Breakthrough Strategy Initialized:")
+            print(f"   🎲 Enhanced Exploration: {self.config.enhanced_exploration}")
+            print(f"   🧠 Hierarchical Reasoning: {self.config.use_hrm}")
+            print(f"   📈 Epsilon Boost: {self.config.epsilon_boost}")
             
         elif TORCH_AVAILABLE and ENHANCED_DQN_AVAILABLE:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -294,6 +346,27 @@ class AITrainingAgent(BaseAgent):
         # Timing
         self.last_decision_time = 0.0
         self.decision_interval = 0.1  # Make decisions every 100ms
+        
+        # Dense reward system - Phase 5: Intermediate Mastery Training
+        if self.config.use_dense_rewards:
+            dense_config = DenseRewardConfig(
+                survival_reward_per_step=self.config.survival_reward,
+                food_consumption_reward=self.config.food_reward,
+                death_penalty=self.config.death_penalty,
+                wall_avoidance_reward=self.config.wall_avoidance_reward,
+                food_proximity_reward_base=self.config.food_proximity_reward * 3.5,
+                food_proximity_multiplier=2.5,  # Enhanced proximity multiplier for precision
+                efficient_movement_reward=self.config.efficient_movement_reward,
+                exploration_reward=self.config.exploration_reward,
+                length_bonus_per_segment=self.config.length_bonus_per_segment,
+                forward_movement_reward=2.0,    # Premium movement incentive for mastery
+                time_survival_bonus=0.2,        # Maximum time-based survival bonus
+                streak_bonus_multiplier=1.8     # Higher streak bonuses for consistency
+            )
+            self.dense_reward_calculator = DenseRewardCalculator(dense_config)
+            print(f"🎯 Phase 5 Intermediate Mastery dense reward system enabled for Snake {snake_id}")
+        else:
+            self.dense_reward_calculator = None
         
     def calculate_state_size(self) -> int:
         """Calculate the size of the state vector"""
@@ -382,6 +455,12 @@ class AITrainingAgent(BaseAgent):
         self.last_action = action
         
         self.training_step += 1
+        
+        # Calculate step reward using dense reward system
+        if self.config.use_dense_rewards and self.alive:
+            step_reward = self.calculate_reward("step", {})
+            if step_reward > 0:  # Only add positive intermediate rewards for step
+                self.stats.total_reward += step_reward
         
         # Broadcast AI decision for monitoring (less frequently to reduce spam)
         if self.training_step % 10 == 0:  # Only every 10th decision
@@ -657,9 +736,11 @@ class AITrainingAgent(BaseAgent):
         # Scale reward based on improvement
         proximity_reward = distance_change * self.config.food_proximity_reward
         
-        # Bonus for being very close to food
-        if current_distance <= 2:
-            proximity_reward += self.config.food_proximity_reward * 0.5
+        # Enhanced proximity bonuses for 10-25 point range
+        if current_distance <= 1:
+            proximity_reward += self.config.food_proximity_reward * 1.0  # Strong bonus for adjacent
+        elif current_distance <= 2:
+            proximity_reward += self.config.food_proximity_reward * 0.5  # Medium bonus for close
             
         return proximity_reward
     
@@ -769,6 +850,196 @@ class AITrainingAgent(BaseAgent):
                 
         return total_positioning_reward
     
+    def _calculate_territory_control_bonus(self) -> float:
+        """Calculate bonus for controlling board territory (20-35 point range)"""
+        if not self.snake_segments or len(self.snake_segments) < 12:
+            return 0.0
+            
+        head_x, head_y = self.snake_segments[0]
+        
+        # Calculate controlled area based on snake body coverage
+        body_positions = set(self.snake_segments)
+        control_radius = min(3, len(self.snake_segments) // 8)  # Dynamic radius based on size
+        
+        controlled_cells = 0
+        total_cells_in_radius = 0
+        
+        for dx in range(-control_radius, control_radius + 1):
+            for dy in range(-control_radius, control_radius + 1):
+                nx, ny = head_x + dx, head_y + dy
+                if 0 <= nx < self.grid_width and 0 <= ny < self.grid_height:
+                    total_cells_in_radius += 1
+                    # Check if this area is "controlled" (near snake body or food-accessible)
+                    min_distance_to_body = min(abs(nx - bx) + abs(ny - by) for bx, by in body_positions)
+                    if min_distance_to_body <= 2:  # Within 2 cells of snake body
+                        controlled_cells += 1
+        
+        control_ratio = controlled_cells / max(total_cells_in_radius, 1)
+        return control_ratio * self.config.territory_control_bonus
+    
+    def _calculate_competitive_advantage_bonus(self) -> float:
+        """Calculate bonus for outperforming opponent (25-40 point range)"""
+        if not self.other_snakes:
+            return 0.0
+            
+        my_length = len(self.snake_segments)
+        competitor_lengths = [len(segments) for segments in self.other_snakes.values() if segments]
+        
+        if not competitor_lengths:
+            return 0.0
+            
+        max_competitor_length = max(competitor_lengths)
+        avg_competitor_length = sum(competitor_lengths) / len(competitor_lengths)
+        
+        # Bonus for being significantly longer than competitors
+        if my_length > max_competitor_length + 3:
+            return self.config.competitive_advantage_bonus * 1.0  # Full bonus
+        elif my_length > avg_competitor_length + 2:
+            return self.config.competitive_advantage_bonus * 0.5  # Half bonus
+        else:
+            return 0.0
+    
+    def _calculate_efficiency_mastery_bonus(self) -> float:
+        """Calculate bonus for optimal movement patterns (25-40 point range)"""
+        if not hasattr(self, '_movement_efficiency_history'):
+            self._movement_efficiency_history = deque(maxlen=20)
+            return 0.0
+            
+        # Track recent movement efficiency
+        if hasattr(self, '_prev_head_pos') and self.snake_segments:
+            current_head = self.snake_segments[0]
+            prev_head = self._prev_head_pos
+            
+            # Calculate movement efficiency (avoid backtracking, prefer straight lines)
+            if hasattr(self, '_prev_prev_head_pos'):
+                # Check for smooth movement patterns
+                dx1 = current_head[0] - prev_head[0]
+                dy1 = current_head[1] - prev_head[1]
+                dx2 = prev_head[0] - self._prev_prev_head_pos[0]
+                dy2 = prev_head[1] - self._prev_prev_head_pos[1]
+                
+                # Reward consistent direction
+                if (dx1, dy1) == (dx2, dy2):  # Same direction
+                    efficiency_score = 1.0
+                elif abs(dx1) + abs(dy1) == 1 and abs(dx2) + abs(dy2) == 1:  # Valid movement
+                    efficiency_score = 0.5
+                else:
+                    efficiency_score = 0.0
+                    
+                self._movement_efficiency_history.append(efficiency_score)
+                
+            self._prev_prev_head_pos = prev_head
+            
+        self._prev_head_pos = self.snake_segments[0] if self.snake_segments else None
+        
+        # Calculate recent efficiency average
+        if len(self._movement_efficiency_history) >= 10:
+            avg_efficiency = sum(self._movement_efficiency_history) / len(self._movement_efficiency_history)
+            if avg_efficiency > 0.7:  # High efficiency threshold
+                return self.config.efficiency_mastery_bonus * avg_efficiency
+                
+        return 0.0
+    
+    def _calculate_progressive_food_bonus(self) -> float:
+        """Calculate enhanced bonus for consistent food acquisition (Progressive Enhancement)"""
+        if not hasattr(self, '_food_acquisition_streak'):
+            self._food_acquisition_streak = 0
+            
+        current_length = len(self.snake_segments)
+        if hasattr(self, '_prev_length') and current_length > self._prev_length:
+            # Food was acquired - increment streak and give progressive bonus
+            self._food_acquisition_streak += 1
+            base_bonus = self.config.progressive_food_bonus
+            # Progressive bonus increases with streak (capped at 3x)
+            streak_multiplier = min(1.0 + (self._food_acquisition_streak - 1) * 0.2, 3.0)
+            return base_bonus * streak_multiplier
+        else:
+            # Reset streak if no food acquired this step
+            if hasattr(self, '_prev_length'):
+                self._food_acquisition_streak = max(0, self._food_acquisition_streak - 0.1)
+                
+        self._prev_length = current_length
+        return 0.0
+    
+    def _calculate_tactical_movement_bonus(self) -> float:
+        """Calculate bonus for tactical movement patterns (Progressive Enhancement)"""
+        if not hasattr(self, '_movement_history'):
+            self._movement_history = deque(maxlen=8)
+            return 0.0
+            
+        if self.alive and self.snake_segments and len(self.snake_segments) > 0:
+            head_x, head_y = self.snake_segments[0]
+            
+            # Track movement direction
+            if hasattr(self, '_prev_head_pos'):
+                prev_x, prev_y = self._prev_head_pos
+                move_direction = (head_x - prev_x, head_y - prev_y)
+                self._movement_history.append(move_direction)
+            
+            self._prev_head_pos = (head_x, head_y)
+            
+            # Reward tactical movement patterns (not just random movement)
+            if len(self._movement_history) >= 4:
+                # Check for purposeful movement (towards food, away from walls)
+                recent_moves = list(self._movement_history)[-4:]
+                direction_variance = len(set(recent_moves))
+                
+                # Reward moderate variance (not too erratic, not too repetitive)
+                if 2 <= direction_variance <= 3:
+                    return self.config.tactical_movement_bonus
+                    
+        return 0.0
+    
+    def _calculate_skill_development_bonus(self) -> float:
+        """Calculate bonus for skill progression milestones (Progressive Enhancement)"""
+        if not hasattr(self, '_skill_milestones'):
+            self._skill_milestones = {'max_length': 3, 'survival_time': 0}
+            
+        current_length = len(self.snake_segments)
+        current_time = getattr(self, 'move_count', 0)
+        
+        bonus = 0.0
+        
+        # Length milestone bonus
+        if current_length > self._skill_milestones['max_length']:
+            bonus += self.config.skill_development_bonus * 0.5
+            self._skill_milestones['max_length'] = current_length
+            
+        # Survival time milestone bonus
+        if current_time > self._skill_milestones['survival_time'] + 50:  # Every 50 steps
+            bonus += self.config.skill_development_bonus * 0.3
+            self._skill_milestones['survival_time'] = current_time
+            
+        return bonus
+    
+    def _calculate_efficiency_improvement_bonus(self) -> float:
+        """Calculate bonus for improving efficiency over time (Progressive Enhancement)"""
+        if not hasattr(self, '_efficiency_tracking'):
+            self._efficiency_tracking = {'moves_per_food': deque(maxlen=5), 'recent_efficiency': 0.0}
+            return 0.0
+            
+        current_length = len(self.snake_segments)
+        current_moves = getattr(self, 'move_count', 0)
+        
+        # Track efficiency when food is acquired
+        if hasattr(self, '_prev_length') and current_length > self._prev_length:
+            moves_since_start = current_moves
+            if moves_since_start > 0:
+                efficiency = 1.0 / moves_since_start  # Higher efficiency = fewer moves per food
+                self._efficiency_tracking['moves_per_food'].append(efficiency)
+                
+                # Calculate improvement bonus
+                if len(self._efficiency_tracking['moves_per_food']) >= 3:
+                    recent_avg = sum(list(self._efficiency_tracking['moves_per_food'])[-2:]) / 2
+                    older_avg = sum(list(self._efficiency_tracking['moves_per_food'])[:-2]) / max(1, len(self._efficiency_tracking['moves_per_food']) - 2)
+                    
+                    if recent_avg > older_avg:  # Efficiency improved
+                        improvement = (recent_avg - older_avg) / older_avg
+                        return min(improvement * self.config.efficiency_improvement_bonus, self.config.efficiency_improvement_bonus)
+        
+        self._prev_length = current_length
+        return 0.0
+    
     def reset_intermediate_reward_tracking(self):
         """Reset tracking variables for intermediate rewards at episode start"""
         # Reset food proximity tracking
@@ -784,8 +1055,22 @@ class AITrainingAgent(BaseAgent):
             self._explored_positions.clear()
     
     def choose_action(self, state: np.ndarray) -> Action:
-        """Choose action using epsilon-greedy policy with HRM hierarchical reasoning"""
-        if random.random() < self.epsilon:
+        """Choose action using enhanced exploration epsilon-greedy policy with HRM hierarchical reasoning"""
+        
+        # Enhanced Exploration Strategy - Apply epsilon boost if configured
+        effective_epsilon = self.epsilon
+        if (hasattr(self.config, 'enhanced_exploration') and self.config.enhanced_exploration and
+            hasattr(self, 'exploration_boost_active') and self.exploration_boost_active):
+            
+            # Apply adaptive epsilon boost for breakthrough discovery
+            boost_factor = self.config.epsilon_boost * self.adaptive_epsilon_multiplier
+            effective_epsilon = min(0.8, self.epsilon + boost_factor)  # Cap at 80% exploration
+            
+            # Adaptive exploration based on plateau detection
+            if hasattr(self, 'plateau_counter') and self.plateau_counter > self.config.plateau_threshold:
+                effective_epsilon = min(0.9, effective_epsilon * 1.5)  # Extra boost during plateau
+        
+        if random.random() < effective_epsilon:
             return random.choice(list(Action))
         else:
             # Use HRM-enhanced action selection if available
@@ -857,16 +1142,38 @@ class AITrainingAgent(BaseAgent):
         return direction_map[self.snake_direction][action_name]
     
     def calculate_reward(self, event_type: str, data: Dict[str, Any]) -> float:
-        """Calculate reward based on game events with dense intermediate rewards and HRM hierarchical bonuses"""
-        base_reward = 0.0
-        intermediate_rewards = 0.0
+        """Calculate reward using dense reward system for immediate feedback"""
         
-        # Base event rewards
+        # Use dense reward system if enabled
+        if self.config.use_dense_rewards and self.dense_reward_calculator:
+            # Prepare game state for dense reward calculation
+            game_state = {
+                'snake_position': self.snake_segments,
+                'alive': self.alive,
+                'foods': self.foods,
+                'grid_size': (self.grid_width, self.grid_height)
+            }
+            
+            # Get previous state if available
+            previous_state = None
+            if hasattr(self, '_previous_game_state'):
+                previous_state = self._previous_game_state
+            
+            # Calculate dense reward
+            dense_reward = self.dense_reward_calculator.calculate_dense_reward(
+                self.snake_id, event_type, game_state, previous_state
+            )
+            
+            # Store current state for next calculation
+            self._previous_game_state = game_state.copy()
+            
+            return dense_reward
+        
+        # Fallback to original reward system
+        base_reward = 0.0
+        
         if event_type == "food_eaten":
             base_reward = self.config.food_reward
-            # Bonus for length progression
-            length_bonus = len(self.snake_segments) * self.config.length_progression_reward
-            intermediate_rewards += length_bonus
             
         elif event_type == "collision":
             base_reward = self.config.death_penalty
@@ -880,6 +1187,20 @@ class AITrainingAgent(BaseAgent):
         # Add dense intermediate rewards for survival events
         if event_type in ["survival", "step"] and self.snake_segments:
             intermediate_rewards += self.calculate_intermediate_rewards()
+            
+            # NEW: Progressive Enhancement bonuses for 15-30 point range
+            if len(self.snake_segments) >= 3:  # For progressive gameplay
+                # Tactical movement bonus
+                movement_bonus = self._calculate_tactical_movement_bonus()
+                intermediate_rewards += movement_bonus
+                
+                # Skill development bonus
+                skill_bonus = self._calculate_skill_development_bonus()
+                intermediate_rewards += skill_bonus
+                
+                # Efficiency improvement bonus
+                efficiency_bonus = self._calculate_efficiency_improvement_bonus()
+                intermediate_rewards += efficiency_bonus
             
             # Debug logging for intermediate rewards (every 50 steps)
             if self.training_step % 50 == 0 and intermediate_rewards != 0:
@@ -1036,15 +1357,30 @@ class AITrainingAgent(BaseAgent):
     
     def save_model(self):
         """Save the trained model"""
+        # Prevent excessive saving - only save once per episode
+        if hasattr(self, '_last_save_episode') and self._last_save_episode == self.episode_count:
+            return
+        
         try:
             if TORCH_AVAILABLE:
-                torch.save({
+                # Handle different optimizer configurations (DQN vs HRM)
+                optimizer_state = None
+                if hasattr(self, 'optimizer'):
+                    optimizer_state = self.optimizer.state_dict()
+                elif hasattr(self, 'trainer') and hasattr(self.trainer, 'optimizer'):
+                    optimizer_state = self.trainer.optimizer.state_dict()
+                
+                save_data = {
                     'model_state_dict': self.q_network.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict(),
                     'epsilon': self.epsilon,
                     'episode': self.episode_count,
                     'stats': self.stats
-                }, self.config.model_save_path)
+                }
+                
+                if optimizer_state is not None:
+                    save_data['optimizer_state_dict'] = optimizer_state
+                
+                torch.save(save_data, self.config.model_save_path)
             else:
                 # Save simple network weights
                 model_data = {
@@ -1060,6 +1396,7 @@ class AITrainingAgent(BaseAgent):
                 with open(self.config.model_save_path, 'w') as f:
                     json.dump(model_data, f)
             
+            self._last_save_episode = self.episode_count
             print(f"💾 Model saved for {self.snake_id} at episode {self.episode_count}")
             
         except Exception as e:
@@ -1072,7 +1409,14 @@ class AITrainingAgent(BaseAgent):
                 # Fix for PyTorch 2.6+ weights_only default change
                 checkpoint = torch.load(self.config.model_save_path, map_location=self.device, weights_only=False)
                 self.q_network.load_state_dict(checkpoint['model_state_dict'])
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+                
+                # Handle different optimizer configurations (DQN vs HRM)
+                if 'optimizer_state_dict' in checkpoint:
+                    if hasattr(self, 'optimizer'):
+                        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+                    elif hasattr(self, 'trainer') and hasattr(self.trainer, 'optimizer'):
+                        self.trainer.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+                
                 self.epsilon = checkpoint.get('epsilon', self.config.epsilon_start)
                 self.episode_count = checkpoint.get('episode', 0)
                 self.update_target_network()
@@ -1171,6 +1515,9 @@ class AITrainingAgent(BaseAgent):
         player_id = data.get("player_id")
         
         if player_id == self.snake_id:
+            # Mark snake as dead
+            self.alive = False
+            
             # Calculate death penalty
             reward = self.calculate_reward("collision", data)
             self.stats.total_reward += reward
@@ -1223,6 +1570,9 @@ class AITrainingAgent(BaseAgent):
             self.grid_width = config.get("grid_width", self.grid_width)
             self.grid_height = config.get("grid_height", self.grid_height)
         
+        # Reset alive status
+        self.alive = True
+        
         # Start new episode
         self.start_episode()
     
@@ -1231,6 +1581,9 @@ class AITrainingAgent(BaseAgent):
         self.episode_count += 1
         self.stats.episode = self.episode_count
         self.stats.total_reward = 0.0
+        
+        # Ensure snake is alive at episode start
+        self.alive = True
         self.stats.episode_length = 0
         self.stats.foods_eaten = 0
         
