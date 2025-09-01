@@ -60,8 +60,8 @@ class HRMEnhancedDQN(nn.Module):
         # Temporal option integration
         self.option_selector = nn.Linear(hidden_size, 6)  # 6 temporal options
         
-        # Strategic projection layer for dimension matching (initialize as None, create when needed)
-        self.strategic_projection = None
+        # Strategic projection layer for dimension matching
+        self.strategic_projection = nn.Linear(hidden_size // 2, hidden_size)
         
         print("🧠 HRM-Enhanced DQN initialized with hierarchical reasoning capabilities")
     
@@ -145,9 +145,6 @@ class HRMEnhancedDQN(nn.Module):
             strategic_features = self.enhanced_dqn.strategic_layers(hrm_integrated_features)
             # Strategic layers output hidden_size//2, need to match for HRM layers
             if strategic_features.size(-1) != self.hidden_size:
-                # Create strategic projection layer if needed
-                if self.strategic_projection is None:
-                    self.strategic_projection = nn.Linear(strategic_features.size(-1), self.hidden_size).to(strategic_features.device)
                 strategic_features = self.strategic_projection(strategic_features)
         else:
             strategic_features = hrm_integrated_features
